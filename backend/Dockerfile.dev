@@ -1,0 +1,28 @@
+FROM swift:6.1-noble
+
+# Install dependencies
+RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
+    && apt-get -q update \
+    && apt-get -q dist-upgrade -y \
+    && apt-get install -y libjemalloc-dev
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY ./Package.* ./
+
+# Resolve dependencies
+RUN swift package resolve
+
+# Copy source code
+COPY . .
+
+# Build in debug mode (faster)
+RUN swift build
+
+# Expose port
+EXPOSE 8080
+
+# Run in development mode
+CMD ["swift", "run", "backend", "serve", "--env", "development", "--hostname", "0.0.0.0", "--port", "8080"]

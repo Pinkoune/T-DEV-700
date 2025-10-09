@@ -10,3 +10,9 @@ db.sqlite
 .env.*
 !.env.example
 default.profraw
+serviceAccountKey.json
+firebase-debug.log 
+ui-debug.log
+firestore-debug.log 
+.runtimeconfig.json
+firebase/data/
