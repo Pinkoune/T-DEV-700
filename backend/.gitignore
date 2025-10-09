@@ -11,8 +11,8 @@ db.sqlite
 !.env.example
 default.profraw
 serviceAccountKey.json
-firebase-debug.log 
+firebase-debug.log
 ui-debug.log
-firestore-debug.log 
+firestore-debug.log
 .runtimeconfig.json
-firebase/data/
+firebase/data
