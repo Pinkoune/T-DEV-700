@@ -1,0 +1,80 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: project-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - mobile-artifacts:/output:ro
+    depends_on:
+      - backend
+      - mobile-client
+    networks:
+      - project-network
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: project-backend
+    environment:
+      LOG_LEVEL: info
+      FIREBASE_AUTH_EMULATOR_HOST: firebase:9099
+      FIRESTORE_EMULATOR_HOST: firebase:8080
+      FIREBASE_STORAGE_EMULATOR_HOST: firebase:9199
+    expose:
+      - "8080"
+    volumes:
+      - ./backend/Public:/app/Public:ro
+    depends_on:
+      firebase:
+        condition: service_healthy
+    networks:
+      - project-network
+    restart: always
+
+  mobile-client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mobile
+    container_name: project-mobile-client
+    volumes:
+      - mobile-artifacts:/output
+    networks:
+      - project-network
+    command: /bin/sh -c "echo 'iOS SwiftUI project ready' && tail -f /dev/null"
+
+  firebase:
+    image: andreysenov/firebase-tools:latest
+    container_name: project-firebase
+    expose:
+      - "4000"
+      - "8080"
+      - "9099"
+      - "9199"
+    volumes:
+      - ./backend/firebase:/firebase
+      - firebase-data:/root/.cache/firebase/emulators
+    networks:
+      - project-network
+    working_dir: /firebase
+    command: firebase emulators:start --project demo-project --import=/firebase/data --export-on-exit=/firebase/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  project-network:
+    driver: bridge
+
+volumes:
+  firebase-data:
+    driver: local
+  mobile-artifacts:
+    driver: local
