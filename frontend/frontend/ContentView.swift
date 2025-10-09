@@ -9,18 +9,27 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, there")
-            
+        NavigationView {
+            ZStack {
+                Color(.mainGreen)
+                    .ignoresSafeArea()
+                
+                VStack {
+                    NavigationLink(destination: EmployeeHomePage()) {
+                        Text("Aller à la page d'accueil")
+                            .padding()
+                            .background(Color.mainYellow)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .fontWeight(.bold)
+                    }
+                    .navigationBarBackButtonHidden(true)
+                    .padding()
+                }
+            }
         }
-        
-        .padding()
     }
 }
-
 #Preview {
     ContentView()
 }
