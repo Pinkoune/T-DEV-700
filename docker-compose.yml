@@ -1,19 +1,4 @@
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: project-nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - mobile-artifacts:/output:ro
-    depends_on:
-      - backend
-      - mobile-client
-    networks:
-      - project-network
-    restart: always
-
   backend:
     build:
       context: ./backend
@@ -34,6 +19,20 @@ services:
     networks:
       - project-network
     restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix,backend-headers"
+      # Headers de sécurité
+      - "traefik.http.middlewares.backend-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.backend-headers.headers.customresponseheaders.X-API-Version=1.0"
+      # Health check
+      - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.timeout=3s"
 
   mobile-client:
     build:
@@ -45,6 +44,11 @@ services:
     networks:
       - project-network
     command: /bin/sh -c "echo 'iOS SwiftUI project ready' && tail -f /dev/null"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mobile-artifacts.rule=PathPrefix(`/download`)"
+      - "traefik.http.routers.mobile-artifacts.entrypoints=web"
+      - "traefik.http.services.mobile-artifacts.loadbalancer.server.port=8000"
 
   firebase:
     image: andreysenov/firebase-tools:latest
@@ -63,11 +67,63 @@ services:
     command: firebase emulators:start --project demo-project --import=/firebase/data --export-on-exit=/firebase/data
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:4000')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.firebase-ui.rule=PathPrefix(`/firebase`) || Host(`firebase.localhost`)"
+      - "traefik.http.routers.firebase-ui.entrypoints=web"
+      - "traefik.http.services.firebase-ui.loadbalancer.server.port=4000"
+      # Firestore Emulator
+      - "traefik.http.routers.firestore.rule=PathPrefix(`/firestore`)"
+      - "traefik.http.routers.firestore.entrypoints=web"
+      - "traefik.http.services.firestore.loadbalancer.server.port=8080"
+      # Auth Emulator
+      - "traefik.http.routers.firebase-auth.rule=PathPrefix(`/auth-emulator`)"
+      - "traefik.http.routers.firebase-auth.entrypoints=web"
+      - "traefik.http.services.firebase-auth.loadbalancer.server.port=9099"
+
+  traefik:
+    image: traefik:v3.0
+    container_name: project-traefik
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=project-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - project-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=web"
 
 networks:
   project-network:
@@ -77,4 +133,6 @@ volumes:
   firebase-data:
     driver: local
   mobile-artifacts:
+    driver: local
+  traefik_certs:
     driver: local
