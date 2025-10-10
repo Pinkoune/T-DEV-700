@@ -12,7 +12,7 @@ on:
       - 'backend/**'
 
 env:
-  SWIFT_VERSION: '6.2'
+  SWIFT_VERSION: '6.1'
 
 jobs:
   build:
