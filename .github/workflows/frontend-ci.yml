@@ -22,14 +22,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Select Xcode version
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.app
-          xcodebuild -version
-      
-      - name: List available simulators
-        run: |
-          echo "Available simulators:"
-          xcrun simctl list devices available iPhone
+        run: sudo xcode-select -s /Applications/Xcode_16.app
       
       - name: Cache derived data
         uses: actions/cache@v4
@@ -45,7 +38,7 @@ jobs:
           echo "Building iOS app..."
           xcodebuild -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.0' \
             -configuration Debug \
             build
           echo "iOS build successful"
@@ -67,9 +60,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Select Xcode version
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.app
-          xcodebuild -version
+        run:  sudo xcode-select -s /Applications/Xcode_16.app
       
       - name: Run Tests
         working-directory: frontend
@@ -78,7 +69,7 @@ jobs:
           xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.0' \
             -enableCodeCoverage YES
           echo "All tests passed"
       
