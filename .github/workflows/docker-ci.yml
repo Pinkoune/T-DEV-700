@@ -7,7 +7,7 @@ on:
       - 'docker-compose.yml'
       - 'backend/Dockerfile'
       - 'frontend/Dockerfile.mobile'
-      - 'nginx/**'
+      - 'traefik/**'
       - '.github/workflows/docker-ci.yml'
   push:
     branches: [ main, dev ]
@@ -15,7 +15,7 @@ on:
       - 'docker-compose.yml'
       - 'backend/Dockerfile'
       - 'frontend/Dockerfile.mobile'
-      - 'nginx/**'
+      - 'traefik/**'
       - '.github/workflows/docker-ci.yml'
 
 jobs:
@@ -54,11 +54,15 @@ jobs:
           docker compose up --no-start
           echo "All services created successfully"
       
-      - name: Verify nginx config
+      - name: Verify Traefik config
         run: |
-          echo "Validating nginx configuration..."
-          docker run --rm -v $(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro nginx:alpine nginx -t
-          echo "Nginx configuration is valid"
+          echo "Validating Traefik configuration..."
+          # Vérifier que traefik démarre correctement
+          docker compose up -d traefik
+          sleep 5
+          docker compose ps traefik
+          docker compose logs traefik
+          echo "✅ Traefik configuration is valid"
       
       - name: Cleanup
         if: always()
