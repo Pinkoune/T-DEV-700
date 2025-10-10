@@ -1,5 +1,4 @@
 import Vapor
-import FirebaseFirestore
 import Foundation
 
 struct User: Codable, Validatable {
