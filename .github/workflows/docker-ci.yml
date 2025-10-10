@@ -33,7 +33,7 @@ jobs:
       - name: Validate docker-compose
         run: |
           echo "Validating docker-compose.yml..."
-          docker-compose config
+          docker compose config
           echo "docker-compose configuration is valid"
       
       - name: Build backend image
@@ -50,8 +50,8 @@ jobs:
       
       - name: Test docker-compose services
         run: |
-          echo "Testing docker-compose up (dry run)..."
-          docker-compose up --no-start
+          echo "Testing docker compose up (dry run)..."
+          docker compose up --no-start
           echo "All services created successfully"
       
       - name: Verify nginx config
@@ -63,5 +63,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
           docker rmi backend:test mobile-client:test || true
