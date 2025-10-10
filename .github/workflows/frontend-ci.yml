@@ -21,8 +21,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Show Xcode version
+        run: xcodebuild -version
       
       - name: Cache derived data
         uses: actions/cache@v4
@@ -62,8 +62,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Show Xcode version
+        run: xcodebuild -version
       
       - name: Run Tests
         working-directory: frontend
