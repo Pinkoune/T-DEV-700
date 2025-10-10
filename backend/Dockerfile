@@ -1,7 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM swift:6.1-noble AS build
+FROM swift:6.2-noble AS build
 
 # Install OS updates
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
@@ -30,8 +30,7 @@ RUN mkdir /staging
 RUN --mount=type=cache,target=/build/.build \
     swift build -c release \
         --product backend \
-        --static-swift-stdlib \
-        -Xlinker -ljemalloc && \
+        --static-swift-stdlib && \
     # Copy main executable to staging area
     cp "$(swift build -c release --show-bin-path)/backend" /staging && \
     # Copy resources bundled by SPM to staging area
