@@ -1,24 +1,12 @@
-################################################################
-# Configuration statique Traefik - Time Manager
-################################################################
-
 # API et Dashboard
 api:
   dashboard: true
-  insecure: true # Mettre à false en production avec authentification
+  insecure: true
 
 # Points d'entrée
 entryPoints:
   web:
     address: ":80"
-    # En production, décommenter pour forcer HTTPS
-    # http:
-    #   redirections:
-    #     entryPoint:
-    #       to: websecure
-    #       scheme: https
-    #       permanent: true
-
   websecure:
     address: ":443"
 
@@ -50,18 +38,3 @@ accessLog:
       names:
         Authorization: drop
         Cookie: drop
-# Certificats SSL (Let's Encrypt) - Pour production
-# certificatesResolvers:
-#   letsencrypt:
-#     acme:
-#       email: your-email@example.com
-#       storage: /letsencrypt/acme.json
-#       httpChallenge:
-#         entryPoint: web
-
-# Métriques (optionnel - utile pour monitoring)
-# metrics:
-#   prometheus:
-#     addEntryPointsLabels: true
-#     addServicesLabels: true
-#     addRoutersLabels: true
