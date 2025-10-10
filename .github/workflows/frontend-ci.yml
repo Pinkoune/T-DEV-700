@@ -41,7 +41,7 @@ jobs:
           echo "Building iOS app..."
           xcodebuild -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             -configuration Debug \
             build
           echo "✅ iOS build successful"
@@ -72,7 +72,7 @@ jobs:
           xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             -enableCodeCoverage YES
           echo "✅ All tests passed"
       
