@@ -1,0 +1,95 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      
+      - name: Cache derived data
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-xcode-${{ hashFiles('frontend/frontend.xcodeproj/**') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-
+      
+      - name: Build iOS App
+        working-directory: frontend
+        run: |
+          echo "Building iOS app..."
+          xcodebuild -project frontend.xcodeproj \
+            -scheme frontend \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
+            -configuration Debug \
+            build
+          echo "iOS build successful"
+      
+      - name: Archive build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog
+
+  test:
+    name: Test iOS App
+    runs-on: macos-14
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      
+      - name: Run Tests
+        working-directory: frontend
+        run: |
+          echo "Running iOS tests..."
+          xcodebuild test \
+            -project frontend.xcodeproj \
+            -scheme frontend \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
+            -enableCodeCoverage YES
+          echo "All tests passed"
+      
+      - name: Generate coverage
+        run: |
+          echo "Generating iOS coverage report..."
+          xcrun xccov view --report --json \
+            ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult > coverage.json || true
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.json
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
