@@ -31,9 +31,9 @@ struct PerformanceController: RouteCollection {
         performances.post("calculate-team", ":teamID", use: calculateTeamPerformance)
     }
     
-    // MARK: - CRUD Operations
+    // Operations CRUD
     
-    /// GET /api/performances - Récupérer toutes les performances
+    /// GET /api/performances - Récupére toutes les performances
     func getAllPerformances(req: Request) async throws -> [PerformanceResponse] {
         let firestore = req.application.firestore
         let limit = req.query["limit"] ?? 50
@@ -59,7 +59,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    /// POST /api/performances - Créer une nouvelle performance
+    /// POST /api/performances - Crée une nouvelle performance
     func createPerformance(req: Request) async throws -> PerformanceResponse {
         try Performance.validate(content: req)
         let performanceData = try req.content.decode(CreatePerformanceRequest.self)
@@ -73,13 +73,13 @@ struct PerformanceController: RouteCollection {
         let firestore = req.application.firestore
         
         do {
-            // Vérifier que l'utilisateur existe
+            // Vérifie que l'utilisateur existe
             let userDoc = try await firestore.collection("users").document(performanceData.userId).getDocument()
             guard userDoc.exists else {
                 throw Abort(.badRequest, reason: "Utilisateur non trouvé")
             }
             
-            // Vérifier qu'il n'y a pas déjà une performance pour cette période
+            // Vérifie qu'il n'y a pas déjà une performance pour cette période
             let existingPerformances = try await firestore.collection("performances")
                 .whereField("userId", isEqualTo: performanceData.userId)
                 .whereField("period", isEqualTo: performanceData.period)
@@ -108,7 +108,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    /// GET /api/performances/:performanceID - Récupérer une performance spécifique
+    /// GET /api/performances/:performanceID - Récupére une performance spécifique
     func getPerformance(req: Request) async throws -> PerformanceResponse {
         guard let performanceID = req.parameters.get("performanceID") else {
             throw Abort(.badRequest, reason: "ID performance manquant")
@@ -136,7 +136,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    /// PUT /api/performances/:performanceID - Mettre à jour une performance
+    /// PUT /api/performances/:performanceID - Met à jour une performance
     func updatePerformance(req: Request) async throws -> PerformanceResponse {
         guard let performanceID = req.parameters.get("performanceID") else {
             throw Abort(.badRequest, reason: "ID performance manquant")
@@ -182,7 +182,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    /// DELETE /api/performances/:performanceID - Supprimer une performance
+    /// DELETE /api/performances/:performanceID - Supprime une performance
     func deletePerformance(req: Request) async throws -> HTTPStatus {
         guard let performanceID = req.parameters.get("performanceID") else {
             throw Abort(.badRequest, reason: "ID performance manquant")
@@ -208,7 +208,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    // MARK: - Specialized Routes
+    // ROUTES Spécialisées
     
     /// GET /api/performances/by-user/:userID - Performances par utilisateur
     func getPerformancesByUser(req: Request) async throws -> [PerformanceResponse] {
@@ -337,7 +337,7 @@ struct PerformanceController: RouteCollection {
             
             let averagePerformance = count > 0 ? totalIndex / Double(count) : 0.0
             
-            // Calculer la tendance (amélioration/dégradation)
+            // Calcule la tendance (amélioration/dégradation)
             var trend = "stable"
             if performances.count >= 2 {
                 let recent = performances.suffix(3).map { $0.index }
@@ -365,7 +365,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    // MARK: - Analytics Routes
+    // ROUTES Analytiques
     
     /// GET /api/performances/analytics/overview - Vue d'ensemble des performances
     func getPerformanceOverview(req: Request) async throws -> PerformanceOverviewResponse {
@@ -420,7 +420,7 @@ struct PerformanceController: RouteCollection {
         let firestore = req.application.firestore
         
         do {
-            // Récupérer l'équipe
+            // Récupére l'équipe
             let teamDoc = try await firestore.collection("teams").document(teamID).getDocument()
             guard teamDoc.exists, let team = try? teamDoc.data(as: Team.self) else {
                 throw Abort(.notFound, reason: "Équipe non trouvée")
@@ -431,13 +431,13 @@ struct PerformanceController: RouteCollection {
             var evaluatedMembers = 0
             
             for memberID in team.members {
-                // Récupérer l'utilisateur
+                // Récupére l'utilisateur
                 let userDoc = try await firestore.collection("users").document(memberID).getDocument()
                 guard userDoc.exists, let user = try? userDoc.data(as: User.self) else {
                     continue
                 }
                 
-                // Récupérer les performances du membre
+                // Récupére les performances du membre
                 let performanceSnapshot = try await firestore.collection("performances")
                     .whereField("userId", isEqualTo: memberID)
                     .order(by: "createdAt", descending: true)
@@ -519,7 +519,7 @@ struct PerformanceController: RouteCollection {
             var rankings: [UserRankingResponse] = []
             
             for (userId, stats) in userRankings {
-                // Récupérer les détails de l'utilisateur
+                // Récupére les détails de l'utilisateur
                 let userDoc = try await firestore.collection("users").document(userId).getDocument()
                 if userDoc.exists, let user = try? userDoc.data(as: User.self) {
                     let averagePerformance = stats.count > 0 ? stats.totalIndex / Double(stats.count) : 0.0
@@ -535,10 +535,10 @@ struct PerformanceController: RouteCollection {
                 }
             }
             
-            // Trier par performance moyenne décroissante
+            // Trie par performance moyenne décroissante
             rankings.sort { $0.averagePerformance > $1.averagePerformance }
             
-            // Ajouter les rangs
+            // Ajoute les rangs
             for (index, _) in rankings.enumerated() {
                 rankings[index].rank = index + 1
             }
@@ -595,9 +595,9 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    // MARK: - Calculation Routes
+    // ROUTES Calculatrices
     
-    /// POST /api/performances/calculate/:userID - Calculer automatiquement la performance d'un utilisateur
+    /// POST /api/performances/calculate/:userID - Calcule automatiquement la performance d'un utilisateur
     func calculateUserPerformance(req: Request) async throws -> PerformanceResponse {
         guard let userID = req.parameters.get("userID") else {
             throw Abort(.badRequest, reason: "ID utilisateur manquant")
@@ -607,13 +607,13 @@ struct PerformanceController: RouteCollection {
         let firestore = req.application.firestore
         
         do {
-            // Vérifier que l'utilisateur existe
+            // Vérifie que l'utilisateur existe
             let userDoc = try await firestore.collection("users").document(userID).getDocument()
             guard userDoc.exists, let user = try? userDoc.data(as: User.self) else {
                 throw Abort(.notFound, reason: "Utilisateur non trouvé")
             }
             
-            // Calculer la performance basée sur les heures travaillées
+            // Calcule la performance basée sur les heures travaillées
             let calendar = Calendar.current
             let endDate = Date()
             let startDate: Date
@@ -629,7 +629,7 @@ struct PerformanceController: RouteCollection {
                 throw Abort(.badRequest, reason: "Période invalide")
             }
             
-            // Récupérer les entrées de temps pour la période
+            // Récupére les entrées de temps pour la période
             let timeEntriesSnapshot = try await firestore.collection("timeEntries")
                 .whereField("userId", isEqualTo: userID)
                 .whereField("arrival", isGreaterThanOrEqualTo: startDate)
@@ -640,14 +640,14 @@ struct PerformanceController: RouteCollection {
             var totalHours = 0.0
             var expectedHours = 0.0
             
-            // Calculer les heures travaillées et attendues
+            // Calcule les heures travaillées et attendues
             for document in timeEntriesSnapshot.documents {
                 if let timeEntry = try? document.data(as: TimeEntry.self) {
                     totalHours += timeEntry.hoursWorked ?? 0
                 }
             }
             
-            // Calculer les heures attendues selon la période
+            // Calcule les heures attendues selon la période
             switch calculationData.period {
             case "day":
                 expectedHours = user.weeklyHoursTarget / 5.0 // Supposer 5 jours de travail
@@ -659,10 +659,10 @@ struct PerformanceController: RouteCollection {
                 expectedHours = user.weeklyHoursTarget
             }
             
-            // Calculer l'index de performance (0-100)
+            // Calcule l'index de performance (0-100)
             let performanceIndex = min(100.0, (totalHours / expectedHours) * 100.0)
             
-            // Créer la performance
+            // Crée la performance
             let performance = Performance(
                 userId: userID,
                 period: calculationData.period,
@@ -688,7 +688,7 @@ struct PerformanceController: RouteCollection {
         }
     }
     
-    /// POST /api/performances/calculate-team/:teamID - Calculer la performance d'une équipe
+    /// POST /api/performances/calculate-team/:teamID - Calcule la performance d'une équipe
     func calculateTeamPerformance(req: Request) async throws -> [PerformanceResponse] {
         guard let teamID = req.parameters.get("teamID") else {
             throw Abort(.badRequest, reason: "ID équipe manquant")
@@ -698,7 +698,7 @@ struct PerformanceController: RouteCollection {
         let firestore = req.application.firestore
         
         do {
-            // Récupérer l'équipe
+            // Récupére l'équipe
             let teamDoc = try await firestore.collection("teams").document(teamID).getDocument()
             guard teamDoc.exists, let team = try? teamDoc.data(as: Team.self) else {
                 throw Abort(.notFound, reason: "Équipe non trouvée")
@@ -706,9 +706,9 @@ struct PerformanceController: RouteCollection {
             
             var teamPerformances: [PerformanceResponse] = []
             
-            // Calculer la performance pour chaque membre
+            // Calcule la performance pour chaque membre
             for memberID in team.members {
-                // Créer une requête temporaire pour calculer la performance du membre
+                // Crée une requête temporaire pour calculer la performance du membre
                 let memberReq = Request(application: req.application, on: req.eventLoop)
                 memberReq.parameters.set("userID", to: memberID)
                 try memberReq.content.encode(calculationData)
@@ -717,7 +717,7 @@ struct PerformanceController: RouteCollection {
                     let memberPerformance = try await calculateUserPerformance(req: memberReq)
                     teamPerformances.append(memberPerformance)
                 } catch {
-                    // Continuer même si un membre échoue
+                    // Continue même si un membre échoue
                     continue
                 }
             }
@@ -731,7 +731,7 @@ struct PerformanceController: RouteCollection {
     }
 }
 
-// MARK: - Request/Response Models
+// MODELES de Requêtes et Réponses
 
 struct CreatePerformanceRequest: Content, Validatable {
     let userId: String

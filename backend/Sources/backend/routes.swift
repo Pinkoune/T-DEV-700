@@ -20,27 +20,49 @@ func routes(_ app: Application) throws {
         "API is healthy!"
     }
     
-    // Enregistrement des contrôleurs simplifiés (pour démonstration)
-    try app.register(collection: SimpleUserController())
-    try app.register(collection: SimpleTimeEntryController())
+    // Enregistrement des contrôleurs Firebase
+    try app.register(collection: UserController())
+    try app.register(collection: TeamController())
+    try app.register(collection: TimeEntryController())
+    try app.register(collection: PerformanceController())
     
-    // Note: Les contrôleurs complets avec Firebase sont disponibles mais commentés
-    // try app.register(collection: UserController())
-    // try app.register(collection: TeamController())
-    // try app.register(collection: TimeEntryController())
-    // try app.register(collection: PerformanceController())
-    
-    // Route pour les statistiques globales (version simplifiée)
+    // Route pour les statistiques globales
     app.get("api", "stats") { req async throws -> GlobalStatsResponse in
-        let stats = await MockDataService.shared.getGlobalStats()
+        let firestore = req.application.firestore
         
-        return GlobalStatsResponse(
-            activeUsers: stats.activeUsers,
-            activeTeams: stats.activeTeams,
-            currentlyWorking: stats.currentlyWorking,
-            performancesThisMonth: stats.performancesThisMonth,
-            timestamp: Date()
-        )
+        do {
+            // Compte les utilisateurs actifs
+            let usersSnapshot = try await firestore.collection("users")
+                .whereField("isActive", isEqualTo: true)
+                .getDocuments()
+            
+            // Compte les équipes actives
+            let teamsSnapshot = try await firestore.collection("teams")
+                .whereField("isActive", isEqualTo: true)
+                .getDocuments()
+            
+            // Compte les entrées de temps actives
+            let activeTimeEntriesSnapshot = try await firestore.collection("timeEntries")
+                .whereField("status", isEqualTo: "active")
+                .getDocuments()
+            
+            // Compte les performances ce mois-ci
+            let calendar = Calendar.current
+            let startOfMonth = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
+            let performancesSnapshot = try await firestore.collection("performances")
+                .whereField("createdAt", isGreaterThanOrEqualTo: startOfMonth)
+                .getDocuments()
+            
+            return GlobalStatsResponse(
+                activeUsers: usersSnapshot.documents.count,
+                activeTeams: teamsSnapshot.documents.count,
+                currentlyWorking: activeTimeEntriesSnapshot.documents.count,
+                performancesThisMonth: performancesSnapshot.documents.count,
+                timestamp: Date()
+            )
+        } catch {
+            throw Abort(.internalServerError, reason: "Erreur lors de la récupération des statistiques: \(error.localizedDescription)")
+        }
     }
 }
 

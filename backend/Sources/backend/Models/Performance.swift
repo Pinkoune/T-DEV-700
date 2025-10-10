@@ -1,4 +1,5 @@
 import Vapor
+import FirebaseFirestore
 import Foundation
 
 struct Performance: Codable, Validatable {

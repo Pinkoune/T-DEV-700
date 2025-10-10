@@ -389,16 +389,16 @@ struct TimeEntryController: RouteCollection {
         }
     }
     
-    /// GET /api/timeentries/by-date?date=YYYY-MM-DD - Entrées de temps par date
+    /// GET /api/timeentries/by-date?date=DD-MM-YYYY - Entrées de temps par date
     func getTimeEntriesByDate(req: Request) async throws -> [TimeEntryResponse] {
         guard let dateString = req.query["date"] as String? else {
-            throw Abort(.badRequest, reason: "Date manquante (format: YYYY-MM-DD)")
+            throw Abort(.badRequest, reason: "Date manquante (format: DD-MM-YYYY)")
         }
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.dateFormat = "dd-MM-yyyy"
         guard let date = formatter.date(from: dateString) else {
-            throw Abort(.badRequest, reason: "Format de date invalide (attendu: YYYY-MM-DD)")
+            throw Abort(.badRequest, reason: "Format de date invalide (attendu: DD-MM-YYYY)")
         }
         
         let calendar = Calendar.current
@@ -502,7 +502,7 @@ struct TimeEntryController: RouteCollection {
         }
     }
     
-    /// GET /api/timeentries/daily-summary/:userID?date=YYYY-MM-DD - Résumé quotidien
+    /// GET /api/timeentries/daily-summary/:userID?date=DD-MM-YYYY - Résumé quotidien
     func getDailySummary(req: Request) async throws -> DailySummaryResponse {
         guard let userID = req.parameters.get("userID") else {
             throw Abort(.badRequest, reason: "ID utilisateur manquant")
@@ -510,12 +510,12 @@ struct TimeEntryController: RouteCollection {
         
         let dateString = req.query["date"] as String? ?? {
             let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.dateFormat = "dd-MM-yyyy"
             return formatter.string(from: Date())
         }()
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.dateFormat = "dd-MM-yyyy"
         guard let date = formatter.date(from: dateString) else {
             throw Abort(.badRequest, reason: "Format de date invalide")
         }
