@@ -30,8 +30,7 @@ RUN mkdir /staging
 RUN --mount=type=cache,target=/build/.build \
     swift build -c release \
         --product backend \
-        --static-swift-stdlib \
-        -Xlinker -ljemalloc && \
+        --static-swift-stdlib && \
     # Copy main executable to staging area
     cp "$(swift build -c release --show-bin-path)/backend" /staging && \
     # Copy resources bundled by SPM to staging area

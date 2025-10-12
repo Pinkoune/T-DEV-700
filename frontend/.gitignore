@@ -1,0 +1,12 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+.DS_Store
+
+# Build
+build/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3

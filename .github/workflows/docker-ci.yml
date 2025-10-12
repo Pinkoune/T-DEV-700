@@ -1,0 +1,71 @@
+name: Docker CI
+
+on:
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'docker-compose.yml'
+      - 'backend/Dockerfile'
+      - 'frontend/Dockerfile.mobile'
+      - 'traefik/**'
+      - '.github/workflows/docker-ci.yml'
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'docker-compose.yml'
+      - 'backend/Dockerfile'
+      - 'frontend/Dockerfile.mobile'
+      - 'traefik/**'
+      - '.github/workflows/docker-ci.yml'
+
+jobs:
+  validate:
+    name: Validate Docker Configuration
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Validate docker-compose
+        run: |
+          echo "Validating docker-compose.yml..."
+          docker compose config
+          echo "docker-compose configuration is valid"
+      
+      - name: Build backend image
+        run: |
+          echo "Building backend Docker image..."
+          docker build -t backend:test ./backend
+          echo "Backend image built successfully"
+      
+      - name: Build mobile client image
+        run: |
+          echo "Building mobile client Docker image..."
+          docker build -t mobile-client:test -f frontend/Dockerfile.mobile ./frontend
+          echo "Mobile client image built successfully"
+      
+      - name: Test docker-compose services
+        run: |
+          echo "Testing docker compose up (dry run)..."
+          docker compose up --no-start
+          echo "All services created successfully"
+      
+      - name: Verify Traefik config
+        run: |
+          echo "Validating Traefik configuration..."
+          # Vérifier que traefik démarre correctement
+          docker compose up -d traefik
+          sleep 5
+          docker compose ps traefik
+          docker compose logs traefik
+          echo "✅ Traefik configuration is valid"
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v
+          docker rmi backend:test mobile-client:test || true

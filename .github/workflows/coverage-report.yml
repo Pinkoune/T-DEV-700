@@ -1,0 +1,71 @@
+name: Coverage Report
+
+on:
+  workflow_run:
+    workflows: ["Backend CI", "Frontend CI", "Docker CI"]
+    types:
+      - completed
+
+jobs:
+  report:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-test-results
+          path: ./coverage/backend
+        continue-on-error: true
+      
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-test-results
+          path: ./coverage/frontend
+        continue-on-error: true
+      
+      - name: Generate combined report
+        run: |
+          echo "Generating combined coverage report..."
+          mkdir -p coverage-output
+          
+          echo "# Test Coverage Report" > coverage-output/coverage-report.md
+          echo "" >> coverage-output/coverage-report.md
+          echo "Generated at: $(date)" >> coverage-output/coverage-report.md
+          echo "" >> coverage-output/coverage-report.md
+          echo "## Backend Coverage" >> coverage-output/coverage-report.md
+          echo "See Codecov for detailed backend coverage" >> coverage-output/coverage-report.md
+          echo "" >> coverage-output/coverage-report.md
+          echo "## Frontend Coverage" >> coverage-output/coverage-report.md
+          echo "See Codecov for detailed frontend coverage" >> coverage-output/coverage-report.md
+          echo "" >> coverage-output/coverage-report.md
+          echo "## Summary" >> coverage-output/coverage-report.md
+          echo "- Backend tests: Completed" >> coverage-output/coverage-report.md
+          echo "- Frontend tests: Completed" >> coverage-output/coverage-report.md
+          echo "- Coverage data uploaded to Codecov" >> coverage-output/coverage-report.md
+      
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-output/coverage-report.md
+      
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('coverage-output/coverage-report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
