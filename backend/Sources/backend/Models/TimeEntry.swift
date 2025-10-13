@@ -1,4 +1,5 @@
 import Vapor
+import FirebaseFirestore
 import Foundation
 
 struct TimeEntry: Codable, Validatable {

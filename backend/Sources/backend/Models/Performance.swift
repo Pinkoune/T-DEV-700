@@ -1,10 +1,11 @@
 import Vapor
+import FirebaseFirestore
 import Foundation
 
 struct Performance: Codable, Validatable {
 	var id: String?
 	var userId: String
-	var period: String // "day", "week", "month"
+	var period: String // "jour", "semaine", "mois"
 	var index: Double // Basé sur des heures/objectifs
 	var createdAt: Date
 	var updatedAt: Date

@@ -1,17 +1,12 @@
 import Vapor
+import FirebaseFirestore
 
 // Fonction asynchrone pour initialiser Firestore en ajoutant des documents de test.
 // Cela créé automatiquement les collections si elles n'existent pas.
 // Appel de cette fonction temporaire depuis configure.swift
 // A supprimer après le test
-// FIXME: Cette fonction utilise Firebase SDK - à réimplanter avec HTTP client
 
 public func initializeFirestore(app: Application) async throws {
-	// TODO: Réimplanter avec Firebase REST API
-	app.logger.info("Firebase initialization with REST API not yet implemented")
-	return
-
-	/*
 	let firestore = app.firestore
 
 	// Création d'un utilisateur test
@@ -96,5 +91,4 @@ public func initializeFirestore(app: Application) async throws {
 	])
 	print("Performance de test créée avec ID: \(performanceDocRef.documentID)")
 
-	*/
 }
