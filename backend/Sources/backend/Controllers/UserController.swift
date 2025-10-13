@@ -1,11 +1,11 @@
 import Vapor
 import FirebaseFirestore
+import FirebaseFirestoreSwift
 
 struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
         
-        // Routes CRUD
         users.get(use: getAllUsers)
         users.post(use: createUser)
         users.group(":userID") { user in
@@ -13,22 +13,18 @@ struct UserController: RouteCollection {
             user.put(use: updateUser)
             user.delete(use: deleteUser)
             
-            // Routes spécifiques aux utilisateurs
             user.get("profile", use: getUserProfile)
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
             user.get("performance", use: getUserPerformance)
         }
         
-        // Routes de recherche et filtrage
         users.get("search", use: searchUsers)
         users.get("by-role", ":role", use: getUsersByRole)
         users.get("active", use: getActiveUsers)
     }
     
-    // Opérations CRUD
-    
-    /// GET /api/users - Récupére tous les utilisateurs
+        /// GET /api/users - Récupére tous les utilisateurs
     func getAllUsers(req: Request) async throws -> [UserResponse] {
         let firestore = req.application.firestore
         
@@ -55,10 +51,13 @@ struct UserController: RouteCollection {
         try User.validate(content: req)
         let userData = try req.content.decode(CreateUserRequest.self)
         
+        let passwordHash = try req.password.hash(userData.password)
+        
         let user = User(
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email,
+            passwordHash: passwordHash,
             phone: userData.phone,
             role: userData.role ?? "employee",
             department: userData.department,
@@ -82,6 +81,7 @@ struct UserController: RouteCollection {
                 "firstName": user.firstName,
                 "lastName": user.lastName,
                 "email": user.email,
+                "passwordHash": user.passwordHash,
                 "phone": user.phone,
                 "role": user.role,
                 "department": user.department ?? "",
@@ -463,6 +463,7 @@ struct CreateUserRequest: Content, Validatable {
     let firstName: String
     let lastName: String
     let email: String
+    let password: String
     let phone: String
     let role: String?
     let department: String?
@@ -473,6 +474,7 @@ struct CreateUserRequest: Content, Validatable {
         validations.add("firstName", as: String.self, is: !.empty && .count(2...50))
         validations.add("lastName", as: String.self, is: !.empty && .count(2...50))
         validations.add("email", as: String.self, is: .email)
+        validations.add("password", as: String.self, is: .count(8...))
         validations.add("phone", as: String.self, is: .count(10...15))
     }
 }

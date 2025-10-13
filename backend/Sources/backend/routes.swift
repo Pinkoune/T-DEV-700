@@ -21,6 +21,7 @@ func routes(_ app: Application) throws {
     }
     
     // Enregistrement des contrôleurs Firebase
+    try app.register(collection: AuthController())
     try app.register(collection: UserController())
     try app.register(collection: TeamController())
     try app.register(collection: TimeEntryController())

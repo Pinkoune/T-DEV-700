@@ -7,6 +7,7 @@ struct User: Codable, Validatable {
 	var firstName: String
 	var lastName: String
 	var email: String
+	var passwordHash: String 
 	var phone: String
 	var role: String // "admin", "manager", "employee"
 	var department: String?
@@ -65,11 +66,12 @@ struct User: Codable, Validatable {
 	}
 	
 	// Initializer
-	init(firstName: String, lastName: String, email: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
+	init(firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
 		self.id = nil
 		self.firstName = firstName
 		self.lastName = lastName
 		self.email = email
+		self.passwordHash = passwordHash
 		self.phone = phone
 		self.role = role
 		self.department = department
