@@ -8,6 +8,7 @@ func routes(_ app: Application) throws {
             version: "1.0.0",
             status: "running",
             endpoints: APIEndpoints(
+                auth: "/api/auth",
                 users: "/api/users",
                 teams: "/api/teams",
                 timeentries: "/api/timeentries",
@@ -77,6 +78,7 @@ struct APIInfoResponse: Content {
 }
 
 struct APIEndpoints: Content {
+    let auth: String
     let users: String
     let teams: String
     let timeentries: String

@@ -13,6 +13,10 @@ struct AuthController: RouteCollection {
     func login(req: Request) async throws -> LoginResponse {
         let loginData = try req.content.decode(LoginRequest.self)
         
+        guard isValidEmailDomain(loginData.email) else {
+            throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé. Veuillez utiliser une adresse email professionnelle ou personnelle valide.")
+        }
+        
         guard isValidPassword(loginData.password) else {
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
@@ -71,6 +75,40 @@ struct AuthController: RouteCollection {
         guard password.range(of: specialCharRegex, options: .regularExpression) != nil else { return false }
         
         return true
+    }
+    
+    private func isValidEmailDomain(_ email: String) -> Bool {
+        let blockedDomains = [
+        "mailpit.local",
+		"mailtrap.io",
+		"ethereal.email",
+		"temp-mail.org",
+		"guerrillamail.com",
+		"10minutemail.com",
+		"throwaway.email",
+		"tempmail.com",
+		"yopmail.com",
+		"mailinator.com",
+		"trashmail.com",
+		"fakeinbox.com",
+		"dispostable.com",
+		"getnada.com",
+		"sharklasers.com",
+		"guerrillamailblock.com",
+		"spam4.me",
+		"grr.la",
+		"example.com",
+		"test.com",
+        ]
+        
+        let lowercasedEmail = email.lowercased()
+        let components = lowercasedEmail.split(separator: "@")
+        guard components.count == 2 else { return false }
+        
+        let domain = String(components[1])
+        
+        // Permet de vérifier si le domaine est bloqué ou non  
+        return !blockedDomains.contains(where: { domain.contains($0) })
     }
 }
 
