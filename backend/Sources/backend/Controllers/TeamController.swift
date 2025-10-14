@@ -5,10 +5,13 @@ struct TeamController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let teams = routes.grouped("api", "teams")
         
-        // Routes CRUD
-        teams.get(use: getAllTeams)
-        teams.post(use: createTeam)
-        teams.group(":teamID") { team in
+        // Routes protégées par JWT
+        let protected = teams.grouped(JWTAuthMiddleware())
+        
+        // Application de la protection à toutes les routes
+        protected.get(use: getAllTeams)
+        protected.post(use: createTeam)
+        protected.group(":teamID") { team in
             team.get(use: getTeam)
             team.put(use: updateTeam)
             team.delete(use: deleteTeam)
@@ -24,10 +27,11 @@ struct TeamController: RouteCollection {
         }
         
         // Routes de recherche et filtrage
-        teams.get("search", use: searchTeams)
-        teams.get("active", use: getActiveTeams)
-        teams.get("by-manager", ":managerID", use: getTeamsByManager)
+        protected.get("search", use: searchTeams)
+        protected.get("active", use: getActiveTeams)
+        protected.get("by-manager", ":managerID", use: getTeamsByManager)
     }
+    
     
     // Opérations CRUD
     
@@ -581,7 +585,6 @@ struct TeamController: RouteCollection {
             throw Abort(.internalServerError, reason: "Erreur lors de la récupération des équipes du manager: \(error.localizedDescription)")
         }
     }
-}
 
 // Requêtes et réponses pour les Models
 
@@ -655,4 +658,5 @@ struct TeamMemberPerformance: Content {
     let isManager: Bool
     let latestPerformance: Double?
     let performanceLevel: String
+}
 }

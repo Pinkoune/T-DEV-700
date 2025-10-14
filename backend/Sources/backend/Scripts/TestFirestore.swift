@@ -1,6 +1,6 @@
 import Vapor
 import FirebaseFirestore
-import FirebaseFirestoreSwift
+// import FirebaseFirestoreSwift
 
 public func testFirestore(app: Application) async throws {
     let firestore = app.firestore

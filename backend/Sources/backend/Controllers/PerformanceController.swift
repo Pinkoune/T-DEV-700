@@ -5,31 +5,35 @@ struct PerformanceController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let performances = routes.grouped("api", "performances")
         
+        // Routes protégées par JWT
+        let protected = performances.grouped(JWTAuthMiddleware())
+        
         // Routes CRUD
-        performances.get(use: getAllPerformances)
-        performances.post(use: createPerformance)
-        performances.group(":performanceID") { performance in
+        protected.get(use: getAllPerformances)
+        protected.post(use: createPerformance)
+        protected.group(":performanceID") { performance in
             performance.get(use: getPerformance)
             performance.put(use: updatePerformance)
             performance.delete(use: deletePerformance)
         }
         
         // Routes spécialisées
-        performances.get("by-user", ":userID", use: getPerformancesByUser)
-        performances.get("by-period", ":period", use: getPerformancesByPeriod)
-        performances.get("latest", ":userID", use: getLatestPerformance)
-        performances.get("trends", ":userID", use: getPerformanceTrends)
+        protected.get("by-user", ":userID", use: getPerformancesByUser)
+        protected.get("by-period", ":period", use: getPerformancesByPeriod)
+        protected.get("latest", ":userID", use: getLatestPerformance)
+        protected.get("trends", ":userID", use: getPerformanceTrends)
         
         // Routes de statistiques et analyses
-        performances.get("analytics", "overview", use: getPerformanceOverview)
-        performances.get("analytics", "team", ":teamID", use: getTeamPerformanceAnalytics)
-        performances.get("analytics", "rankings", use: getPerformanceRankings)
-        performances.get("analytics", "alerts", use: getPerformanceAlerts)
+        protected.get("analytics", "overview", use: getPerformanceOverview)
+        protected.get("analytics", "team", ":teamID", use: getTeamPerformanceAnalytics)
+        protected.get("analytics", "rankings", use: getPerformanceRankings)
+        protected.get("analytics", "alerts", use: getPerformanceAlerts)
         
         // Routes de calcul automatique
-        performances.post("calculate", ":userID", use: calculateUserPerformance)
-        performances.post("calculate-team", ":teamID", use: calculateTeamPerformance)
+        protected.post("calculate", ":userID", use: calculateUserPerformance)
+        protected.post("calculate-team", ":teamID", use: calculateTeamPerformance)
     }
+    
     
     // Operations CRUD
     
@@ -729,7 +733,6 @@ struct PerformanceController: RouteCollection {
             throw Abort(.internalServerError, reason: "Erreur lors du calcul de la performance d'équipe: \(error.localizedDescription)")
         }
     }
-}
 
 // MODELES de Requêtes et Réponses
 
@@ -816,4 +819,5 @@ struct PerformanceAlertResponse: Content {
 struct LatestPerformanceResponse: Content {
     let hasPerformance: Bool
     let performance: PerformanceResponse?
+}
 }

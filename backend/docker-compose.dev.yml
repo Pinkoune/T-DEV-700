@@ -8,6 +8,14 @@ services:
   app:
     build:
       context: .
+    # Créer un utilisateur non-privilégié
+    RUN groupadd -r vapor && useradd -r -g vapor -m -d /home/vapor vapor
+
+    # Changer le propriétaire du répertoire de travail
+    RUN chown -R vapor:vapor /app
+
+    # Basculer vers l'utilisateur non-privilégié
+    USER vapor:vapor
       dockerfile: Dockerfile.dev
     container_name: vapor-app-dev
     environment:

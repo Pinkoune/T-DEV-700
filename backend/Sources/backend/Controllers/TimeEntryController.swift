@@ -5,27 +5,31 @@ struct TimeEntryController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let timeEntries = routes.grouped("api", "timeentries")
         
+        // Routes protégées par JWT
+        let protected = timeEntries.grouped(JWTAuthMiddleware())
+        
         // Routes CRUD
-        timeEntries.get(use: getAllTimeEntries)
-        timeEntries.post(use: createTimeEntry)
-        timeEntries.group(":timeEntryID") { timeEntry in
+        protected.get(use: getAllTimeEntries)
+        protected.post(use: createTimeEntry)
+        protected.group(":timeEntryID") { timeEntry in
             timeEntry.get(use: getTimeEntry)
             timeEntry.put(use: updateTimeEntry)
             timeEntry.delete(use: deleteTimeEntry)
         }
         
         // Routes de pointage
-        timeEntries.post("clock-in", use: clockIn)
-        timeEntries.post("clock-out", ":timeEntryID", use: clockOut)
-        timeEntries.get("active", ":userID", use: getActiveTimeEntry)
+        protected.post("clock-in", use: clockIn)
+        protected.post("clock-out", ":timeEntryID", use: clockOut)
+        protected.get("active", ":userID", use: getActiveTimeEntry)
         
         // Routes de filtrage et statistiques
-        timeEntries.get("by-user", ":userID", use: getTimeEntriesByUser)
-        timeEntries.get("by-date", use: getTimeEntriesByDate)
-        timeEntries.get("overtime", use: getOvertimeEntries)
-        timeEntries.get("stats", ":userID", use: getUserTimeStats)
-        timeEntries.get("daily-summary", ":userID", use: getDailySummary)
+        protected.get("by-user", ":userID", use: getTimeEntriesByUser)
+        protected.get("by-date", use: getTimeEntriesByDate)
+        protected.get("overtime", use: getOvertimeEntries)
+        protected.get("stats", ":userID", use: getUserTimeStats)
+        protected.get("daily-summary", ":userID", use: getDailySummary)
     }
+    
     
     // Operations CRUD
     
@@ -564,7 +568,6 @@ struct TimeEntryController: RouteCollection {
             throw Abort(.internalServerError, reason: "Erreur lors de la génération du résumé quotidien: \(error.localizedDescription)")
         }
     }
-}
 
 // Modèles de réponses et requêtes
 
@@ -614,4 +617,5 @@ struct DailySummaryResponse: Content {
 struct ActiveTimeEntryResponse: Content {
     let hasActiveEntry: Bool
     let timeEntry: TimeEntryResponse?
+}
 }
