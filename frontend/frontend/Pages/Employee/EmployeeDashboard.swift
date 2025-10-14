@@ -11,7 +11,8 @@ struct EmployeeDashboard: View {
     @State private var recentActivities: [TimeEntry] = []
     
     var body: some View {
-        ZStack {
+        NavigationStack {
+            ZStack {
             Color(.mainGreen)
                 .edgesIgnoringSafeArea(.all)
             VStack {
@@ -43,6 +44,7 @@ struct EmployeeDashboard: View {
             .edgesIgnoringSafeArea(.all)
         }
         .navigationBarBackButtonHidden(true)
+    }
     }
     
     private var sampleActivities: [TimeEntry] {
