@@ -10,15 +10,22 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         NavigationView {
-            VStack {
-                NavigationLink(destination: EmployeeHomePageView()) {
-                    Text("Aller à la page d'accueil")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+            ZStack {
+                Color(.mainGreen)
+                    .ignoresSafeArea()
+                
+                VStack {
+                    NavigationLink(destination: EmployeeHomePage()) {
+                        Text("Aller à la page d'accueil")
+                            .padding()
+                            .background(Color.mainYellow)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            .fontWeight(.bold)
+                    }
+                    .navigationBarBackButtonHidden(true)
+                    .padding()
                 }
-                .padding()
             }
         }
     }

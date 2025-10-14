@@ -1,17 +1,11 @@
-// A modifier pour plus de flexibilité (responsive)
-
 import SwiftUI
 
-struct PointerCard: View {
+struct PointerCardMini: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             StatusBadge()
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 16)
-            
-            TimeInfoView()
-                .padding(.horizontal, 20)
                 .padding(.bottom, 16)
             
             DateLabel()
@@ -35,5 +29,5 @@ struct PointerCard: View {
 }
 
 #Preview {
-    EmployeeHomePage()
+    EmployeeDashboard()
 }

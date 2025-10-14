@@ -4,17 +4,21 @@
 import SwiftUI
 
 struct HeaderView: View {
+    let title: String
+    
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "apple.logo")
-                .font(.system(size: 40, weight: .regular))
-                .foregroundColor(.mainYellow)
-            
-            Text("Bonjour Ronald,")
-                .font(.system(size: 32, weight: .bold))
+        Image(.mcApple)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: 100, maxHeight: 60)
+        
+        HStack {
+            Text(title)
+                .font(.title)
+                .fontWeight(.bold)
                 .foregroundColor(.white)
+            Spacer()
         }
-        .padding(.top, 20)
-        .padding(.bottom, 30)
+        .padding()
     }
 }
