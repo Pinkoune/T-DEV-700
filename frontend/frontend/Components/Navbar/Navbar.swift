@@ -9,9 +9,17 @@ struct Navbar: View {
 //                .position(x: 200, y: 750)
             
             HStack(spacing: 40) {
-                NavbarIcons(systemName: "calendar", color: .mainGreen, size: 60)
-                NavbarIcons(systemName: "fork.knife", color: .red, size: 90)
-                    .padding(.bottom, 40)
+                NavigationLink(destination: EmployeeDashboard()) {
+                    NavbarIcons(systemName: "calendar", color: .mainGreen, size: 60)
+                }
+                .navigationBarBackButtonHidden(true)
+                
+                NavigationLink(destination: EmployeeHomePage()) {
+                    NavbarIcons(systemName: "fork.knife", color: .red, size: 90)
+                        .padding(.bottom, 40)
+                }
+                .navigationBarBackButtonHidden(true)
+                
                 NavbarIcons(systemName: "cart.fill", color: .mainGreen, size: 60)
             }
             .padding(.bottom)
@@ -21,5 +29,5 @@ struct Navbar: View {
 }
 
 #Preview {
-    EmployeeHomePageView()
+    EmployeeHomePage()
 }

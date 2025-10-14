@@ -1,7 +1,7 @@
 // MARK: - ContentView for EmployeeHomepage
 import SwiftUI
 
-struct EmployeeHomePageView: View {
+struct EmployeeHomePage: View {
     
     var body: some View {
         ZStack {
@@ -9,17 +9,7 @@ struct EmployeeHomePageView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                Image(systemName: "apple.logo")
-                    .font(.system(size: 40, weight: .regular))
-                    .foregroundColor(.mainYellow)
-                
-                
-                HStack {
-                    Text("Bonjour Ronald,")
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding()
+                HeaderView(title: "Bonjour Ronald,")
 
                 PointerCard()
                     .padding(.horizontal, 16)
@@ -45,5 +35,5 @@ struct EmployeeHomePageView: View {
 }
 
 #Preview {
-    EmployeeHomePageView()
+    EmployeeHomePage()
 }

@@ -30,5 +30,5 @@ struct BottomShape: Shape {
 }
 
 #Preview {
-    EmployeeHomePageView()
+    EmployeeHomePage()
 }
