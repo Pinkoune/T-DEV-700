@@ -16,7 +16,7 @@ struct ForgotPassword: View {
     
     var body: some View {
         ZStack {
-            Color("MainBackground")
+            Color(Color.mainGreen)
                 .ignoresSafeArea()
             
             VStack(spacing: 25) {
@@ -70,7 +70,7 @@ struct ForgotPassword: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color("ButtonColor"))
+                .background(Color(Color.mainYellow))
                 .cornerRadius(10)
                 .shadow(radius: 5)
                 .padding(.horizontal, 30)

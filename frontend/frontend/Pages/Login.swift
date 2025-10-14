@@ -13,10 +13,11 @@ struct Login: View {
     @State private var errorMessage = ""
     @State private var isLoading = false
     @State private var showForgotPassword = false
+    @State private var showEmployeePage = false
     
     var body: some View {
         ZStack {
-            Color("MainBackground")
+            Color(Color.mainGreen)
                 .ignoresSafeArea()
             VStack(spacing: 25) {
                 Spacer()
@@ -70,11 +71,21 @@ struct Login: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color("ButtonColor"))
+                .background(Color.mainYellow)
                 .cornerRadius(10)
                 .shadow(radius: 5)
                 .padding(.horizontal, 30)
                 .disabled(isLoading)
+                
+                Button(action: {
+                    showEmployeePage = true
+                }) {
+                    Text("Aller à la page d'accueil")
+                        .padding()
+                        .background(Color.mainYellow)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
                 
                 Button(action: {
                     showForgotPassword = true
@@ -90,6 +101,9 @@ struct Login: View {
         }
         .sheet(isPresented: $showForgotPassword) {
             ForgotPassword()
+        }
+        .fullScreenCover(isPresented: $showEmployeePage) {
+            EmployeeHomePage()
         }
     }
     
