@@ -1,17 +1,36 @@
 import Vapor
-import FirebaseFirestore
+import Fluent
 import Foundation
 
-struct TimeEntry: Codable, Validatable {
-	var id: String?
-	var userId: String
+final class TimeEntry: Model, Content, @unchecked Sendable {
+	static let schema = "time_entries"
+	
+	@ID(key: .id)
+	var id: UUID?
+	
+	@Parent(key: "user_id")
+	var user: User
+	
+	@Field(key: "arrival")
 	var arrival: Date
+	
+	@OptionalField(key: "departure")
 	var departure: Date?
-	var hoursWorked: Double? // Calculé automatiquement
+	
+	@OptionalField(key: "hours_worked")
+	var hoursWorked: Double?
+	
+	@Field(key: "status")
 	var status: String // "active", "completed", "cancelled"
-	var notes: String? // Notes optionnelles
-	var createdAt: Date
-	var updatedAt: Date
+	
+	@OptionalField(key: "notes")
+	var notes: String?
+	
+	@Timestamp(key: "created_at", on: .create)
+	var createdAt: Date?
+	
+	@Timestamp(key: "updated_at", on: .update)
+	var updatedAt: Date?
 	
 	// Propriétés calculées
 	var calculatedHours: Double {
@@ -54,35 +73,34 @@ struct TimeEntry: Codable, Validatable {
 		}
 	}
 	
-	// Validation
-	static func validations(_ validations: inout Validations) {
-		validations.add("userId", as: String.self, is: !.empty)
-		validations.add("status", as: String.self, is: .in("active", "completed", "cancelled"))
-	}
+	// Initializer
+	init() {}
 	
-	// Méthodes utilitaires
-	mutating func clockOut() {
-		self.departure = Date()
-		self.hoursWorked = calculatedHours
-		self.status = "completed"
-		self.updatedAt = Date()
-	}
-	
-	mutating func cancel() {
-		self.status = "cancelled"
-		self.updatedAt = Date()
-	}
-	
-	// Initializer pour pointer l'arrivée
-	init(userId: String, notes: String? = nil) {
-		self.id = nil
-		self.userId = userId
+	init(id: UUID? = nil, userId: UUID, notes: String? = nil) {
+		self.id = id
+		self.$user.id = userId
 		self.arrival = Date()
 		self.departure = nil
 		self.hoursWorked = nil
 		self.status = "active"
 		self.notes = notes
-		self.createdAt = Date()
-		self.updatedAt = Date()
+	}
+	
+	// Méthodes utilitaires
+	func clockOut() {
+		self.departure = Date()
+		self.hoursWorked = calculatedHours
+		self.status = "completed"
+	}
+	
+	func cancel() {
+		self.status = "cancelled"
+	}
+}
+
+// MARK: - Validations
+extension TimeEntry: Validatable {
+	static func validations(_ validations: inout Validations) {
+		validations.add("status", as: String.self, is: .in("active", "completed", "cancelled"))
 	}
 }

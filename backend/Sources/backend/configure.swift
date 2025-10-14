@@ -1,72 +1,41 @@
 import Vapor
-@preconcurrency import FirebaseFirestore
-import SwiftDotenv
-import Foundation
+import Fluent
+import FluentPostgresDriver
 
 // Configuration de l'application
 public func configure(_ app: Application) async throws {
-    // Chargement des variables d'environnement
-    // Note: Utilisez les variables système ou configurez Dotenv selon votre version
-    // try Dotenv.load(path: ".env")
+    // Configuration PostgreSQL
+    let hostname = Environment.get("DATABASE_HOST") ?? "localhost"
+    let port = Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5432
+    let username = Environment.get("DATABASE_USERNAME") ?? "vapor"
+    let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+    let database = Environment.get("DATABASE_NAME") ?? "vapor_database"
     
-    // Configuration Firebase avec vos credentials
-    // Note: Temporairement désactivé - voir FIREBASE_CONFIGURATION.md pour l'activation
-    // try await configureFirebaseWithCredentials(app)
+    app.databases.use(
+        .postgres(
+            hostname: hostname,
+            port: port,
+            username: username,
+            password: password,
+            database: database
+        ),
+        as: .psql
+    )
     
-    // Configuration temporaire pour les tests
-    print("Mode test - Firebase désactivé temporairement")
-    print("Consultez FIREBASE_CONFIGURATION.md pour activer Firebase")
+    // Migrations
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreateTeam())
+    app.migrations.add(CreateTimeEntry())
+    app.migrations.add(CreatePerformance())
+    
+    // Auto-migrate in development
+    if app.environment == .development {
+        try await app.autoMigrate()
+    }
     
     // Enregistrement des routes
     try routes(app)
     
-    print("API configurée avec vos credentials Firebase")
+    app.logger.info("✅ PostgreSQL database configured")
+    app.logger.info("📊 Database: \(database) on \(hostname):\(port)")
 }
-
-// Configuration Firebase avec credentials
-private func configureFirebaseWithCredentials(_ app: Application) async throws {
-    // Récupération des variables d'environnement
-    guard let projectId = Environment.get("FIREBASE_PROJECT_ID"),
-          let serviceAccountPath = Environment.get("FIREBASE_SERVICE_ACCOUNT_PATH") else {
-        throw Abort(.internalServerError, reason: "Variables Firebase manquantes. Définissez FIREBASE_PROJECT_ID et FIREBASE_SERVICE_ACCOUNT_PATH")
-    }
-    
-    // Vérification que le fichier de service account existe
-    let serviceAccountURL = URL(fileURLWithPath: serviceAccountPath)
-    guard FileManager.default.fileExists(atPath: serviceAccountURL.path) else {
-        throw Abort(.internalServerError, reason: "Fichier serviceAccountKey.json non trouvé à : \(serviceAccountPath)")
-    }
-    
-    // Configuration des credentials Google Cloud
-    setenv("GOOGLE_APPLICATION_CREDENTIALS", serviceAccountPath, 1)
-    
-    // Configuration Firestore avec credentials
-    // Note: Les credentials sont chargés via GOOGLE_APPLICATION_CREDENTIALS
-    app.storage[FirestoreKey.self] = Firestore.firestore()
-    
-    print("Firebase Firestore configuré avec le projet : \(projectId)")
-    print("Credentials chargés depuis : \(serviceAccountPath)")
-}
-
-// Clé de stockage pour Firestore
-struct FirestoreKey: StorageKey {
-    typealias Value = Firestore
-}
-
-// Extension pour accéder à Firestore
-extension Application {
-    var firestore: Firestore {
-        get {
-            guard let firestore = storage[FirestoreKey.self] else {
-                fatalError("Firestore non configuré. Vérifiez vos credentials Firebase.")
-            }
-            return firestore
-        }
-        set {
-            storage[FirestoreKey.self] = newValue
-        }
-    }
-}
-
-// Conformité Sendable pour éviter les warnings
-extension FirestoreKey.Value: @retroactive @unchecked Sendable {}

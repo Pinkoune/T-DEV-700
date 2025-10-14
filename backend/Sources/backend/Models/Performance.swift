@@ -1,14 +1,27 @@
 import Vapor
-import FirebaseFirestore
+import Fluent
 import Foundation
 
-struct Performance: Codable, Validatable {
-	var id: String?
-	var userId: String
-	var period: String // "jour", "semaine", "mois"
+final class Performance: Model, Content, @unchecked Sendable {
+	static let schema = "performances"
+	
+	@ID(key: .id)
+	var id: UUID?
+	
+	@Parent(key: "user_id")
+	var user: User
+	
+	@Field(key: "period")
+	var period: String // "day", "week", "month"
+	
+	@Field(key: "index")
 	var index: Double // Basé sur des heures/objectifs
-	var createdAt: Date
-	var updatedAt: Date
+	
+	@Timestamp(key: "created_at", on: .create)
+	var createdAt: Date?
+	
+	@Timestamp(key: "updated_at", on: .update)
+	var updatedAt: Date?
 	
 	// Propriétés calculées
 	var performanceLevel: String {
@@ -30,20 +43,21 @@ struct Performance: Codable, Validatable {
 		return index >= 90
 	}
 	
-	// Validation
-	static func validations(_ validations: inout Validations) {
-		validations.add("userId", as: String.self, is: !.empty)
-		validations.add("period", as: String.self, is: .in("day", "week", "month"))
-		validations.add("index", as: Double.self, is: .range(0...100))
-	}
+	// Initializer
+	init() {}
 	
-	// Initializer avec timestamps automatiques
-	init(userId: String, period: String, index: Double) {
-		self.id = nil
-		self.userId = userId
+	init(id: UUID? = nil, userId: UUID, period: String, index: Double) {
+		self.id = id
+		self.$user.id = userId
 		self.period = period
 		self.index = index
-		self.createdAt = Date()
-		self.updatedAt = Date()
+	}
+}
+
+// MARK: - Validations
+extension Performance: Validatable {
+	static func validations(_ validations: inout Validations) {
+		validations.add("period", as: String.self, is: .in("day", "week", "month"))
+		validations.add("index", as: Double.self, is: .range(0...100))
 	}
 }
