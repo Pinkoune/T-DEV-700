@@ -22,7 +22,8 @@ struct DashboardView: View {
                 
                 HStack {
                     Text("Activité récente")
-                        .font(.mcDoFont())
+                        .font(.title)
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
                     Spacer()
                 }
@@ -105,7 +106,8 @@ struct ActivityCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(activity.title)
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
                 
                 if let startTime = activity.startTime {
                     Text("Arrivée : \(startTime)")
@@ -130,7 +132,8 @@ struct ActivityCard: View {
             HStack(spacing: 8) {
                 Text(activity.timeSpent)
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
             }
         }
         .padding()
