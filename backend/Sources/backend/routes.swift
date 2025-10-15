@@ -8,17 +8,6 @@ func routes(_ app: Application) throws {
             version: "1.0.0",
             status: "running",
             database: "PostgreSQL",
-            endpoints: APIEndpoints(
-                health: "/health",
-                auth: "/auth",
-                users: "/users",
-                teams: "/teams",
-                clocks: "/clocks",
-                reports: "/reports",
-                timeentries: "/timeentries",
-                performances: "/performances",
-                stats: "/stats"
-            )
         )
     }
 
