@@ -1,3 +1,4 @@
+Solution provisoire pour Firebase, incluant mise à jour de GoogleService-Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -34,4 +35,7 @@
 	<string>https://test-project-id-default-rtdb.firebaseio.com</string>
 </dict>
 </plist>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 812abc5 (solution provisoire par rapport a Firebase)

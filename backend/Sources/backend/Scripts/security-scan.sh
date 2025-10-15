@@ -20,3 +20,4 @@ docker run --rm -v "$(pwd)":/project \
     trufflesecurity/trufflehog:latest filesystem /project
 
 echo "Scan de sécurité terminé"
+
