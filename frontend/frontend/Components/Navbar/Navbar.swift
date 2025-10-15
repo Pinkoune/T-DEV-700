@@ -20,7 +20,10 @@ struct Navbar: View {
                 }
                 .navigationBarBackButtonHidden(true)
                 
-                NavbarIcons(systemName: "cart.fill", color: .mainGreen, size: 60)
+                NavigationLink(destination: EmployeeAccount()) {
+                    NavbarIcons(systemName: "person.crop.circle", color: .mainGreen, size: 60)
+                }
+                .navigationBarBackButtonHidden(true)
             }
             .padding(.bottom)
 //            .ignoresSafeArea(edges: .bottom)
