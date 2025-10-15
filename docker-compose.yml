@@ -45,12 +45,54 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      # Router principal pour /api avec stripprefix
+      - "traefik.http.routers.backend-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-api.middlewares=backend-stripprefix,backend-headers"
+      # Router pour /auth sans stripprefix
+      - "traefik.http.routers.backend-auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.backend-auth.entrypoints=web"
+      - "traefik.http.routers.backend-auth.service=backend"
+      - "traefik.http.routers.backend-auth.middlewares=backend-headers"
+      # Router pour /users sans stripprefix
+      - "traefik.http.routers.backend-users.rule=PathPrefix(`/users`)"
+      - "traefik.http.routers.backend-users.entrypoints=web"
+      - "traefik.http.routers.backend-users.service=backend"
+      - "traefik.http.routers.backend-users.middlewares=backend-headers"
+      # Router pour /performances sans stripprefix
+      - "traefik.http.routers.backend-performances.rule=PathPrefix(`/performances`)"
+      - "traefik.http.routers.backend-performances.entrypoints=web"
+      - "traefik.http.routers.backend-performances.service=backend"
+      - "traefik.http.routers.backend-performances.middlewares=backend-headers"
+      # Router pour /timeentries sans stripprefix
+      - "traefik.http.routers.backend-timeentries.rule=PathPrefix(`/timeentries`)"
+      - "traefik.http.routers.backend-timeentries.entrypoints=web"
+      - "traefik.http.routers.backend-timeentries.service=backend"
+      - "traefik.http.routers.backend-timeentries.middlewares=backend-headers"
+      # Router pour /teams sans stripprefix
+      - "traefik.http.routers.backend-teams.rule=PathPrefix(`/teams`)"
+      - "traefik.http.routers.backend-teams.entrypoints=web"
+      - "traefik.http.routers.backend-teams.service=backend"
+      - "traefik.http.routers.backend-teams.middlewares=backend-headers"
+      # Router pour /clocks sans stripprefix
+      - "traefik.http.routers.backend-clocks.rule=PathPrefix(`/clocks`)"
+      - "traefik.http.routers.backend-clocks.entrypoints=web"
+      - "traefik.http.routers.backend-clocks.service=backend"
+      - "traefik.http.routers.backend-clocks.middlewares=backend-headers"
+      # Router pour /reports sans stripprefix
+      - "traefik.http.routers.backend-reports.rule=PathPrefix(`/reports`)"
+      - "traefik.http.routers.backend-reports.entrypoints=web"
+      - "traefik.http.routers.backend-reports.service=backend"
+      - "traefik.http.routers.backend-reports.middlewares=backend-headers"
+      # Router pour /health sans stripprefix
+      - "traefik.http.routers.backend-health.rule=PathPrefix(`/health`)"
+      - "traefik.http.routers.backend-health.entrypoints=web"
+      - "traefik.http.routers.backend-health.service=backend"
+      # Service backend
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      # Middlewares
       - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.backend.middlewares=backend-stripprefix,backend-headers"
-      # Headers de sécurité
       - "traefik.http.middlewares.backend-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.middlewares.backend-headers.headers.customresponseheaders.X-API-Version=1.0"
       # Health check
