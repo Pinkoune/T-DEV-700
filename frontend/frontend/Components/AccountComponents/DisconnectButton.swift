@@ -22,5 +22,6 @@ struct DisconnectButton: View {
         }
         .padding(25)
         .padding(.bottom, 5)
+        .padding(.top, -40)
     }
 }
