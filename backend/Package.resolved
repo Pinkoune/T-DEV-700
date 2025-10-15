@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "originHash" : "f0fc6cdac707133918f7ae92c3b11e1c4674a8bfc60e8aa56b5e147a1f82872f",
+=======
+  "originHash" : "27dad66fe2b469a5542ccb873101b6b6f46a6bb16e274a3f69ee2c1315718945",
+>>>>>>> 3cf58da (solution provisoire en rapport Firebase)
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -47,6 +51,7 @@
       }
     },
     {
+<<<<<<< HEAD
       "identity" : "core",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/core.git",
@@ -65,6 +70,8 @@
       }
     },
     {
+=======
+>>>>>>> 3cf58da (solution provisoire en rapport Firebase)
       "identity" : "jwt",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/jwt.git",
@@ -83,6 +90,27 @@
       }
     },
     {
+<<<<<<< HEAD
+=======
+      "identity" : "leaf",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/leaf.git",
+      "state" : {
+        "revision" : "b70a6108e4917f338f6b8848407bf655aa7e405f",
+        "version" : "4.5.1"
+      }
+    },
+    {
+      "identity" : "leaf-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/leaf-kit.git",
+      "state" : {
+        "revision" : "0c325fc46d42455914abd0105e88fe4561fc31a8",
+        "version" : "1.14.0"
+      }
+    },
+    {
+>>>>>>> 3cf58da (solution provisoire en rapport Firebase)
       "identity" : "multipart-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/multipart-kit.git",
@@ -92,6 +120,7 @@
       }
     },
     {
+<<<<<<< HEAD
       "identity" : "random",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/random.git",
@@ -101,6 +130,8 @@
       }
     },
     {
+=======
+>>>>>>> 3cf58da (solution provisoire en rapport Firebase)
       "identity" : "routing-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/routing-kit.git",
