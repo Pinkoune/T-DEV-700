@@ -3,14 +3,24 @@
 // A modifier, voir s'il est possible de rentrer des variables de texte
 import SwiftUI
 
+
 struct HeaderView: View {
+    let userType: UserType
     let title: String
     
+    var appleColor: Color {
+        switch userType {
+        case .employee:
+            return .mainYellow
+        case .manager:
+            return .mainGreen
+        }
+    }
+    
     var body: some View {
-        Image(.mcApple)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 100, maxHeight: 60)
+        Image(systemName: "apple.logo")
+            .font(.system(size: 60))
+            .foregroundStyle(appleColor)
         
         HStack {
             Text(title)
