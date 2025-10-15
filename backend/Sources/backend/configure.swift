@@ -1,9 +1,14 @@
 import Vapor
 import Fluent
 import FluentPostgresDriver
+import JWT
 
 // Configuration de l'application
 public func configure(_ app: Application) async throws {
+    // Configuration JWT
+    let jwtSecret = Environment.get("JWT_SECRET") ?? "secret-key-change-in-production"
+    app.jwt.signers.use(.hs256(key: [UInt8](jwtSecret.utf8)))
+    
     // Configuration PostgreSQL
     let hostname = Environment.get("DATABASE_HOST") ?? "localhost"
     let port = Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5432
@@ -27,6 +32,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateTeam())
     app.migrations.add(CreateTimeEntry())
     app.migrations.add(CreatePerformance())
+    app.migrations.add(AddPasswordHashToUser())
+    app.migrations.add(SeedUsers())
     
     // Auto-migrate in development
     if app.environment == .development {

@@ -2,7 +2,7 @@ import Vapor
 import Fluent
 import Foundation
 
-final class User: Model, Content, @unchecked Sendable {
+final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	static let schema = "users"
 	
 	@ID(key: .id)
@@ -16,6 +16,9 @@ final class User: Model, Content, @unchecked Sendable {
 	
 	@Field(key: "email")
 	var email: String
+	
+	@Field(key: "password_hash")
+	var passwordHash: String
 	
 	@Field(key: "phone")
 	var phone: String
@@ -91,11 +94,12 @@ final class User: Model, Content, @unchecked Sendable {
 	// Initializer
 	init() {}
 	
-	init(id: UUID? = nil, firstName: String, lastName: String, email: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
+	init(id: UUID? = nil, firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
 		self.id = id
 		self.firstName = firstName
 		self.lastName = lastName
 		self.email = email
+		self.passwordHash = passwordHash
 		self.phone = phone
 		self.role = role
 		self.department = department

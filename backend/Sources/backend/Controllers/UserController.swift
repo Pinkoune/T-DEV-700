@@ -5,25 +5,29 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("users")
         
-        // Routes CRUD
-        users.get(use: getAllUsers)
-        users.post(use: createUser)
-        users.group(":userID") { user in
+        // Routes protégées par JWT
+        let protected = users.grouped(JWTAuthMiddleware())
+        
+        // Routes admin seulement
+        let admin = protected.grouped(AdminMiddleware())
+        admin.get(use: getAllUsers)
+        admin.post(use: createUser)
+        admin.delete(":userID", use: deleteUser)
+        admin.get("by-role", ":role", use: getUsersByRole)
+        admin.get("active", use: getActiveUsers)
+        
+        // Routes accessibles par l'utilisateur lui-même ou admin
+        protected.group(":userID") { user in
             user.get(use: getUser)
             user.put(use: updateUser)
-            user.delete(use: deleteUser)
-            
-            // Routes spécifiques aux utilisateurs
             user.get("profile", use: getUserProfile)
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
             user.get("performances", use: getUserPerformances)
         }
         
-        // Routes de recherche et filtrage
-        users.get("search", use: searchUsers)
-        users.get("by-role", ":role", use: getUsersByRole)
-        users.get("active", use: getActiveUsers)
+        // Routes de recherche (authentifié)
+        protected.get("search", use: searchUsers)
     }
     
     // MARK: - CRUD Operations
@@ -66,11 +70,16 @@ struct UserController: RouteCollection {
             throw Abort(.conflict, reason: "Un utilisateur avec cet email existe déjà")
         }
         
+        // Générer un mot de passe par défaut hashé
+        let defaultPassword = "Welcome2024!"
+        let passwordHash = try req.password.hash(defaultPassword)
+        
         // Créer le nouvel utilisateur
         let user = User(
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email.lowercased(),
+            passwordHash: passwordHash,
             phone: userData.phone,
             role: userData.role ?? "employee",
             department: userData.department,

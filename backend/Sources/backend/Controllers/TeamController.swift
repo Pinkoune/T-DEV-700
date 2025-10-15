@@ -5,31 +5,35 @@ struct TeamController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let teams = routes.grouped("teams")
         
-        // Routes CRUD
-        teams.get(use: getAllTeams)
-        teams.post(use: createTeam)
-        teams.group(":teamID") { team in
+        // Routes protégées par JWT
+        let protected = teams.grouped(JWTAuthMiddleware())
+        
+        // Routes accessibles par tous les authentifiés
+        protected.get(use: getAllTeams)
+        protected.get("search", use: searchTeams)
+        protected.get("active", use: getActiveTeams)
+        
+        // Routes managers seulement
+        let manager = protected.grouped(ManagerMiddleware())
+        manager.post(use: createTeam)
+        manager.get("by-manager", ":managerID", use: getTeamsByManager)
+        
+        manager.group(":teamID") { team in
             team.get(use: getTeam)
             team.put(use: updateTeam)
             team.delete(use: deleteTeam)
             
-            // Gestion des membres
+            // Gestion des membres (managers)
+            team.get("members", use: getTeamMembers)
             team.post("members", ":userID", use: addMember)
             team.delete("members", ":userID", use: removeMember)
-            team.get("members", use: getTeamMembers)
             
-            // Statistiques de l'équipe
+            // Statistiques de l'équipe (managers)
             team.get("stats", use: getTeamStats)
             team.get("performance", use: getTeamPerformance)
         }
-        
-        // Routes de recherche et filtrage
-        teams.get("search", use: searchTeams)
-        teams.get("active", use: getActiveTeams)
-        teams.get("by-manager", ":managerID", use: getTeamsByManager)
     }
     
-    // MARK: - CRUD Operations
     
     /// GET /teams - Récupère toutes les équipes
     func getAllTeams(req: Request) async throws -> [TeamResponse] {
@@ -72,12 +76,10 @@ struct TeamController: RouteCollection {
         try CreateTeamRequest.validate(content: req)
         let teamData = try req.content.decode(CreateTeamRequest.self)
         
-        // Vérifier que le manager existe
         guard let _ = try await User.find(teamData.managerId, on: req.db) else {
             throw Abort(.badRequest, reason: "Manager non trouvé")
         }
         
-        // Vérifier qu'une équipe avec ce nom n'existe pas déjà
         let existingTeam = try await Team.query(on: req.db)
             .filter(\.$name == teamData.name)
             .first()
@@ -86,7 +88,6 @@ struct TeamController: RouteCollection {
             throw Abort(.conflict, reason: "Une équipe avec ce nom existe déjà")
         }
         
-        // Créer la nouvelle équipe
         let team = Team(
             name: teamData.name,
             description: teamData.description,

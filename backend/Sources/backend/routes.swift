@@ -7,7 +7,7 @@ func routes(_ app: Application) throws {
             message: "T-DEV-700 - McTime",
             version: "1.0.0",
             status: "running",
-            database: "PostgreSQL",
+            database: "PostgreSQL"
         )
     }
 
@@ -35,6 +35,7 @@ func routes(_ app: Application) throws {
     try app.register(collection: PerformanceController())
     try app.register(collection: TimeEntryController())
     try app.register(collection: TeamController())
+    try app.register(collection: DashboardController())
     
     // GET /users/:id/clocks - Pointages des utilisateurs 
     app.get("users", ":userID", "clocks") { req async throws -> [TimeEntryResponse] in
@@ -131,7 +132,6 @@ struct APIInfoResponse: Content {
     let version: String
     let status: String
     let database: String
-    let endpoints: APIEndpoints
 }
 
 struct APIEndpoints: Content {

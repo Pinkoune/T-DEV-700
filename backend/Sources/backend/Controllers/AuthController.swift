@@ -1,11 +1,13 @@
 import Vapor
 import Fluent
+import JWT
 
 struct AuthController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let auth = routes.grouped("auth")
         
         auth.post("login", use: login)
+        auth.post("register", use: register)
     }
     
     /// POST /auth/login - Connexion d'un utilisateur
@@ -31,20 +33,82 @@ struct AuthController: RouteCollection {
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
         
-        // Vérification du mot de passe
-        // TODO: Implémenter le hash de mot de passe (bcrypt)
-        // Pour l'instant, comparaison simple (À NE PAS FAIRE EN PRODUCTION)
-        // let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
+        // Vérification du mot de passe avec bcrypt
+        let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
         
-        // TEMPORAIRE: Accepter tous les mots de passe valides pour les tests
-        // En production, décommenter la ligne ci-dessus
+        if !isPasswordValid {
+            throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
+        }
         
-        // Génération du token (JWT à implémenter plus tard)
-        let token = UUID().uuidString
+        // Génération du JWT
+        let payload = UserJWTPayload(
+            userId: user.id!.uuidString,
+            email: user.email,
+            role: user.role,
+            exp: .init(value: Date().addingTimeInterval(86400)) // 24 heures
+        )
+        
+        let token = try req.jwt.sign(payload)
         
         return LoginResponse(
             success: true,
             message: "Connexion réussie",
+            token: token,
+            user: LoginUserResponse(from: user)
+        )
+    }
+    
+    /// POST /auth/register - Inscription d'un nouvel utilisateur
+    func register(req: Request) async throws -> LoginResponse {
+        let registerData = try req.content.decode(RegisterRequest.self)
+        
+        // Validation de l'email
+        guard isValidEmailDomain(registerData.email) else {
+            throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé")
+        }
+        
+        // Validation du mot de passe
+        guard isValidPassword(registerData.password) else {
+            throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
+        }
+        
+        // Vérifier l'existence de l'email
+        let existingUser = try await User.query(on: req.db)
+            .filter(\.$email == registerData.email.lowercased())
+            .first()
+        
+        if existingUser != nil {
+            throw Abort(.conflict, reason: "Cet email est déjà utilisé")
+        }
+        
+        let passwordHash = try req.password.hash(registerData.password)
+        
+        // Création de l'utilisateur
+        let user = User(
+            firstName: registerData.firstName,
+            lastName: registerData.lastName,
+            email: registerData.email.lowercased(),
+            passwordHash: passwordHash,
+            phone: registerData.phone,
+            role: "employee",
+            department: registerData.department,
+            position: registerData.position
+        )
+        
+        try await user.save(on: req.db)
+        
+        let payload = UserJWTPayload(
+            userId: user.id!.uuidString,
+            email: user.email,
+            role: user.role,
+            exp: .init(value: Date().addingTimeInterval(86400))
+        )
+        
+        let token = try req.jwt.sign(payload)
+        
+        return LoginResponse(
+            success: true,
+            message: "Inscription réussie",
             token: token,
             user: LoginUserResponse(from: user)
         )
@@ -103,6 +167,16 @@ struct AuthController: RouteCollection {
 struct LoginRequest: Content {
     let email: String
     let password: String
+}
+
+struct RegisterRequest: Content {
+    let firstName: String
+    let lastName: String
+    let email: String
+    let password: String
+    let phone: String
+    let department: String?
+    let position: String?
 }
 
 struct LoginResponse: Content {

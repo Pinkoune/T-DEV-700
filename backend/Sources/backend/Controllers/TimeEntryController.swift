@@ -5,26 +5,30 @@ struct TimeEntryController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let timeEntries = routes.grouped("timeentries")
         
-        // Routes CRUD
-        timeEntries.get(use: getAllTimeEntries)
-        timeEntries.post(use: createTimeEntry)
-        timeEntries.group(":timeEntryID") { timeEntry in
+        // Routes protégées par JWT
+        let protected = timeEntries.grouped(JWTAuthMiddleware())
+        
+        // Routes admin/manager
+        let admin = protected.grouped(AdminMiddleware())
+        admin.get(use: getAllTimeEntries)
+        
+        // Routes accessibles par tous les authentifiés
+        protected.post(use: createTimeEntry)
+        protected.group(":timeEntryID") { timeEntry in
             timeEntry.get(use: getTimeEntry)
             timeEntry.put(use: updateTimeEntry)
             timeEntry.delete(use: deleteTimeEntry)
         }
         
-        // Routes de pointage
-        timeEntries.post("clock-in", use: clockIn)
-        timeEntries.post("clock-out", ":timeEntryID", use: clockOut)
-        timeEntries.get("active", ":userID", use: getActiveTimeEntry)
-        
-        // Routes de filtrage et statistiques
-        timeEntries.get("by-user", ":userID", use: getTimeEntriesByUser)
-        timeEntries.get("stats", ":userID", use: getUserTimeStats)
+        // Routes de pointage (tous les authentifiés)
+        protected.post("clock-in", use: clockIn)
+        protected.post("clock-out", ":timeEntryID", use: clockOut)
+        protected.get("active", ":userID", use: getActiveTimeEntry)
+        protected.get("by-user", ":userID", use: getTimeEntriesByUser)
+        protected.get("stats", ":userID", use: getUserTimeStats)
         
         // Route conforme au sujet : POST /clocks
-        let clocks = routes.grouped("clocks")
+        let clocks = routes.grouped("clocks").grouped(JWTAuthMiddleware())
         clocks.post(use: clock)
     }
     
