@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-struct EmployeeAccount: View {
+struct ManagerAccount: View {
     @State private var firstName = "Mac"
     @State private var lastName = "Andcheese"
     @State private var email = "mac.andcheese@mcapple.com"
@@ -97,5 +97,5 @@ struct EmployeeAccount: View {
 }
 
 #Preview {
-    EmployeeAccount()
+    ManagerAccount()
 }

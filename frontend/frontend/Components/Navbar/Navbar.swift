@@ -10,7 +10,7 @@ struct Navbar: View {
             
             HStack(spacing: 40) {
                 NavigationLink(destination: EmployeeDashboard()) {
-                    NavbarIcons(systemName: "calendar", color: .mainGreen, size: 60)
+                    NavbarIcons(systemName: "calendar", color: Color.mainGreen, size: 60)
                 }
                 .navigationBarBackButtonHidden(true)
                 
@@ -21,7 +21,7 @@ struct Navbar: View {
                 .navigationBarBackButtonHidden(true)
                 
                 NavigationLink(destination: EmployeeAccount()) {
-                    NavbarIcons(systemName: "person.crop.circle", color: .mainGreen, size: 60)
+                    NavbarIcons(systemName: "person.crop.circle", color: Color.mainGreen, size: 60)
                 }
                 .navigationBarBackButtonHidden(true)
             }

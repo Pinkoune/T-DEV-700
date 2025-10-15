@@ -3,6 +3,16 @@
 // A modifier, voir s'il est possible de rentrer des variables de texte
 import SwiftUI
 
+enum UserType {
+    case employee
+    case manager
+}
+
+//extension Color {
+//    static let mainYellow = Color.yellow
+//    static let mainGreen = Color.green
+//}
+
 
 struct HeaderView: View {
     let userType: UserType

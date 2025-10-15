@@ -11,12 +11,11 @@ struct EmployeeDashboard: View {
     @State private var recentActivities: [TimeEntry] = []
     
     var body: some View {
-        NavigationStack {
             ZStack {
             Color(.mainGreen)
                 .edgesIgnoringSafeArea(.all)
             VStack {
-                HeaderView(userType: .employee, title: "Activité récente")
+                HeaderView(userType: .employee,title: "Activité récente")
                 
                 PointerCardMini()
                     .padding(.horizontal, 16)
@@ -34,18 +33,7 @@ struct EmployeeDashboard: View {
                     
                 Spacer()
             }
-            VStack{
-                Spacer()
-                Navbar(userType: .employee)
-                    .ignoresSafeArea(edges: .all)
-                    
-                  .padding(.bottom, 0)
-
-            }
-            .edgesIgnoringSafeArea(.all)
         }
-        .navigationBarBackButtonHidden(true)
-    }
     }
     
     private var sampleActivities: [TimeEntry] {

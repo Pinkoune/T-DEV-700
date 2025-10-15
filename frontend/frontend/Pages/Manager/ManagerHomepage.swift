@@ -5,7 +5,6 @@ struct ManagerHomePage: View {
     @State private var teams = Team.sampleTeams
     
     var body: some View {
-        NavigationStack {
             ZStack {
                 Color(.mainYellow)
                     .ignoresSafeArea()
@@ -34,8 +33,6 @@ struct ManagerHomePage: View {
                     }
                     .padding(.bottom, 100)
                 }
-                
-            }
         }
 
     }

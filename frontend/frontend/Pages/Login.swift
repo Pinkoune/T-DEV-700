@@ -114,7 +114,7 @@ struct Login: View {
             ForgotPassword()
         }
         .fullScreenCover(isPresented: $showEmployeePage) {
-            EmployeeHomePage()
+            EmployeeView()
         }
         .fullScreenCover(isPresented: $showManagerPage) {
             ManagerView()
