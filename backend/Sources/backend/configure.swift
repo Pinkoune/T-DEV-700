@@ -2,6 +2,8 @@ import Vapor
 @preconcurrency import FirebaseFirestore
 import SwiftDotenv
 import Foundation
+import JWT
+import Crypto
 
 // Configuration de l'application
 public func configure(_ app: Application) async throws {
@@ -16,11 +18,42 @@ public func configure(_ app: Application) async throws {
     // Configuration temporaire pour les tests
     print("Mode test - Firebase désactivé temporairement")
     print("Consultez FIREBASE_CONFIGURATION.md pour activer Firebase")
+
+    
+    print("API configurée avec vos credentials Firebase")
+    
+    // Chargement des clés depuis les variables d'environnement
+    let privateKeyBase64: String
+    let publicKeyBase64: String
+    
+    if let envPrivateKey = Environment.get("JWT_PRIVATE_KEY"),
+       let envPublicKey = Environment.get("JWT_PUBLIC_KEY") {
+        // En production: utiliser les variables d'environnement
+        privateKeyBase64 = envPrivateKey
+        publicKeyBase64 = envPublicKey
+    } else {
+        // En développement: génération de clés temporaires avec avertissement
+        print("ATTENTION: Génération de clés JWT temporaires pour le développement")
+        print("En PRODUCTION: Définir JWT_PRIVATE_KEY et JWT_PUBLIC_KEY")
+        
+        let cryptoPrivateKey = Crypto.Curve25519.Signing.PrivateKey()
+        privateKeyBase64 = cryptoPrivateKey.rawRepresentation.base64EncodedString()
+        publicKeyBase64 = cryptoPrivateKey.publicKey.rawRepresentation.base64EncodedString()
+    }
+    
+    // Création des clés JWT
+    let privateKey = try EdDSA.PrivateKey(d: privateKeyBase64, curve: .ed25519)
+    let publicKey = try EdDSA.PublicKey(x: publicKeyBase64, curve: .ed25519)
+    
+    // Ajout des clés au keychain JWT
+    await app.jwt.keys.add(eddsa: privateKey, kid: "cle-eddsa-v1")
+    await app.jwt.keys.add(eddsa: publicKey, kid: "cle-publique-v1")
+    
+    // Configuration Firebase
+    try await configureFirebaseWithCredentials(app)
     
     // Enregistrement des routes
     try routes(app)
-    
-    print("API configurée avec vos credentials Firebase")
 }
 
 // Configuration Firebase avec credentials
@@ -68,5 +101,7 @@ extension Application {
     }
 }
 
+
 // Conformité Sendable pour éviter les warnings
 extension FirestoreKey.Value: @retroactive @unchecked Sendable {}
+

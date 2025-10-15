@@ -6,22 +6,25 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
         
-        users.get(use: getAllUsers)
-        users.post(use: createUser)
-        users.group(":userID") { user in
+        // Route protégées par JWT
+        let protected = users.grouped(JWTAuthMiddleware())
+        
+        // Application de la protection à toutes les routes
+        protected.get(use: getAllUsers)
+        protected.post(use: createUser)
+        protected.group(":userID") { user in
             user.get(use: getUser)
             user.put(use: updateUser)
             user.delete(use: deleteUser)
-            
             user.get("profile", use: getUserProfile)
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
             user.get("performance", use: getUserPerformance)
         }
         
-        users.get("search", use: searchUsers)
-        users.get("by-role", ":role", use: getUsersByRole)
-        users.get("active", use: getActiveUsers)
+        protected.get("search", use: searchUsers)
+        protected.get("by-role", ":role", use: getUsersByRole)
+        protected.get("active", use: getActiveUsers)
     }
     
         /// GET /api/users - Récupére tous les utilisateurs
