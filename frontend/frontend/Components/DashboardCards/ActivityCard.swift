@@ -11,7 +11,6 @@ struct ActivityCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Icône horloge
             ZStack {
                 Circle()
                     .fill(Color.white)

@@ -29,6 +29,7 @@ struct EmployeeDashboard: View {
                     .padding(.horizontal)
                 }
                 .padding(.top, 30)
+                .padding(.bottom, 150)
 
                     
                 Spacer()
