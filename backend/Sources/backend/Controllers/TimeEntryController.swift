@@ -5,10 +5,8 @@ struct TimeEntryController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let timeEntries = routes.grouped("timeentries")
         
-        // Routes protégées par JWT
         let protected = timeEntries.grouped(JWTAuthMiddleware())
         
-        // Routes managers
         let manager = protected.grouped(ManagerMiddleware())
         manager.get(use: getAllTimeEntries)
         
@@ -19,19 +17,16 @@ struct TimeEntryController: RouteCollection {
             timeEntry.delete(use: deleteTimeEntry)
         }
         
-        // Routes de pointage (tous les authentifiés)
         protected.post("clock-in", use: clockIn)
         protected.post("clock-out", ":timeEntryID", use: clockOut)
         protected.get("active", ":userID", use: getActiveTimeEntry)
         protected.get("by-user", ":userID", use: getTimeEntriesByUser)
         protected.get("stats", ":userID", use: getUserTimeStats)
         
-        // Route conforme au sujet : POST /clocks
         let clocks = routes.grouped("clocks").grouped(JWTAuthMiddleware())
         clocks.post(use: clock)
     }
     
-    // MARK: - CRUD Operations
     
     /// GET /timeentries - Récupère toutes les entrées de temps
     func getAllTimeEntries(req: Request) async throws -> [TimeEntryResponse] {
@@ -68,12 +63,10 @@ struct TimeEntryController: RouteCollection {
         try CreateTimeEntryRequest.validate(content: req)
         let timeEntryData = try req.content.decode(CreateTimeEntryRequest.self)
         
-        // Vérifier que l'utilisateur existe
         guard let _ = try await User.find(timeEntryData.userId, on: req.db) else {
             throw Abort(.badRequest, reason: "Utilisateur non trouvé")
         }
         
-        // Vérifier qu'il n'y a pas déjà une entrée active pour cet utilisateur
         let activeEntry = try await TimeEntry.query(on: req.db)
             .filter(\.$user.$id == timeEntryData.userId)
             .filter(\.$status == "active")
@@ -83,13 +76,11 @@ struct TimeEntryController: RouteCollection {
             throw Abort(.conflict, reason: "L'utilisateur a déjà une entrée de temps active")
         }
         
-        // Créer la nouvelle entrée
         let timeEntry = TimeEntry(
             userId: timeEntryData.userId,
             notes: timeEntryData.notes
         )
         
-        // Si une date d'arrivée spécifique est fournie
         if let arrival = timeEntryData.arrival {
             timeEntry.arrival = arrival
         }
@@ -135,7 +126,7 @@ struct TimeEntryController: RouteCollection {
         return TimeEntryResponse(from: timeEntry)
     }
     
-    /// DELETE /timeentries/:timeEntryID - Annule une entrée de temps (soft delete)
+    /// DELETE /timeentries/:timeEntryID - Annule une entrée de temps
     func deleteTimeEntry(req: Request) async throws -> HTTPStatus {
         guard let timeEntryID = req.parameters.get("timeEntryID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID entrée de temps invalide")
@@ -145,25 +136,21 @@ struct TimeEntryController: RouteCollection {
             throw Abort(.notFound, reason: "Entrée de temps non trouvée")
         }
         
-        // Soft delete : marquer comme annulé
         timeEntry.status = "cancelled"
         try await timeEntry.save(on: req.db)
         
         return .noContent
     }
     
-    // MARK: - Clock In/Out Operations
     
     /// POST /timeentries/clock-in - Pointer l'arrivée
     func clockIn(req: Request) async throws -> TimeEntryResponse {
         let clockInData = try req.content.decode(ClockInRequest.self)
         
-        // Vérifier que l'utilisateur existe
         guard let _ = try await User.find(clockInData.userId, on: req.db) else {
             throw Abort(.badRequest, reason: "Utilisateur non trouvé")
         }
         
-        // Vérifier qu'il n'y a pas déjà une entrée active
         let activeEntry = try await TimeEntry.query(on: req.db)
             .filter(\.$user.$id == clockInData.userId)
             .filter(\.$status == "active")
@@ -173,7 +160,6 @@ struct TimeEntryController: RouteCollection {
             throw Abort(.conflict, reason: "Vous avez déjà pointé votre arrivée")
         }
         
-        // Créer la nouvelle entrée
         let timeEntry = TimeEntry(
             userId: clockInData.userId,
             notes: clockInData.notes
@@ -195,12 +181,10 @@ struct TimeEntryController: RouteCollection {
             throw Abort(.notFound, reason: "Entrée de temps non trouvée")
         }
         
-        // Vérifier que l'entrée est active
         if timeEntry.status != "active" {
             throw Abort(.badRequest, reason: "Cette entrée de temps n'est pas active")
         }
         
-        // Pointer la sortie
         timeEntry.clockOut()
         
         try await timeEntry.save(on: req.db)
@@ -263,7 +247,6 @@ struct TimeEntryController: RouteCollection {
         }
     }
     
-    // MARK: - Filtering & Statistics
     
     /// GET /timeentries/by-user/:userID - Entrées de temps par utilisateur
     func getTimeEntriesByUser(req: Request) async throws -> [TimeEntryResponse] {
@@ -323,7 +306,6 @@ struct TimeEntryController: RouteCollection {
     }
 }
 
-// MARK: - Request/Response Models
 
 struct CreateTimeEntryRequest: Content, Validatable {
     let userId: UUID

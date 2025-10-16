@@ -15,7 +15,7 @@ final class Performance: Model, Content, @unchecked Sendable {
 	var period: String // "day", "week", "month"
 	
 	@Field(key: "index")
-	var index: Double // Basé sur des heures/objectifs
+	var index: Double 
 	
 	@Timestamp(key: "created_at", on: .create)
 	var createdAt: Date?
@@ -23,7 +23,8 @@ final class Performance: Model, Content, @unchecked Sendable {
 	@Timestamp(key: "updated_at", on: .update)
 	var updatedAt: Date?
 	
-	// Propriétés calculées
+	
+	
 	var performanceLevel: String {
 		switch index {
 		case 90...100:
@@ -43,7 +44,8 @@ final class Performance: Model, Content, @unchecked Sendable {
 		return index >= 90
 	}
 	
-	// Initializer
+	
+	
 	init() {}
 	
 	init(id: UUID? = nil, userId: UUID, period: String, index: Double) {
@@ -54,7 +56,6 @@ final class Performance: Model, Content, @unchecked Sendable {
 	}
 }
 
-// MARK: - Validations
 extension Performance: Validatable {
 	static func validations(_ validations: inout Validations) {
 		validations.add("period", as: String.self, is: .in("day", "week", "month"))

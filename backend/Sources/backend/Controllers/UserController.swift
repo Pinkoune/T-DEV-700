@@ -14,7 +14,6 @@ struct UserController: RouteCollection {
         manager.get("by-role", ":role", use: getUsersByRole)
         manager.get("active", use: getActiveUsers)
         
-        // Routes accessibles par l'utilisateur lui-même ou manager
         protected.group(":userID") { user in
             user.get(use: getUser)
             user.put(use: updateUser)
@@ -140,7 +139,7 @@ struct UserController: RouteCollection {
         return UserResponse(from: user)
     }
     
-    /// DELETE /users/:userID - Désactive un utilisateur (soft delete)
+    /// DELETE /users/:userID - Désactive un utilisateur 
     func deleteUser(req: Request) async throws -> HTTPStatus {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -156,7 +155,6 @@ struct UserController: RouteCollection {
         return .noContent
     }
     
-    // MARK: - Specialized Routes
     
     /// GET /users/:userID/profile - Profil complet de l'utilisateur
     func getUserProfile(req: Request) async throws -> UserProfileResponse {
@@ -174,7 +172,7 @@ struct UserController: RouteCollection {
         return UserProfileResponse(from: user)
     }
     
-    /// GET /users/:userID/teams - Équipes de l'utilisateur
+    /// GET /users/:userID/teams -Trouve toutes les équipes de l'utilisateur
     func getUserTeams(req: Request) async throws -> [UserTeamResponse] {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -184,7 +182,6 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Trouve toutes les équipes où l'utilisateur est membre
         let allTeams = try await Team.query(on: req.db).all()
         let teams = allTeams.filter { $0.isMember(userID) }
         
@@ -271,7 +268,6 @@ struct UserController: RouteCollection {
     }
 }
 
-// MARK: - Request/Response Models
 
 struct CreateUserRequest: Content, Validatable {
     let firstName: String

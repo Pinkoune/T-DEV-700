@@ -21,7 +21,7 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 	var hoursWorked: Double?
 	
 	@Field(key: "status")
-	var status: String // "active", "completed", "cancelled"
+	var status: String 
 	
 	@OptionalField(key: "notes")
 	var notes: String?
@@ -32,10 +32,8 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 	@Timestamp(key: "updated_at", on: .update)
 	var updatedAt: Date?
 	
-	// Propriétés calculées
 	var calculatedHours: Double {
 		guard let departure = departure else {
-			// Si pas encore parti, calculer depuis l'arrivée jusqu'à maintenant
 			return Date().timeIntervalSince(arrival) / 3600
 		}
 		return departure.timeIntervalSince(arrival) / 3600
@@ -73,7 +71,8 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 		}
 	}
 	
-	// Initializer
+
+
 	init() {}
 	
 	init(id: UUID? = nil, userId: UUID, notes: String? = nil) {
@@ -86,7 +85,6 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 		self.notes = notes
 	}
 	
-	// Méthodes utilitaires
 	func clockOut() {
 		self.departure = Date()
 		self.hoursWorked = calculatedHours
@@ -98,7 +96,6 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 	}
 }
 
-// MARK: - Validations
 extension TimeEntry: Validatable {
 	static func validations(_ validations: inout Validations) {
 		validations.add("status", as: String.self, is: .in("active", "completed", "cancelled"))

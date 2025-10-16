@@ -21,7 +21,7 @@ final class Team: Model, Content, @unchecked Sendable {
 	var managerId: UUID
 	
 	@Field(key: "color")
-	var color: String // Codes couleur hex "#FF0000"
+	var color: String 
 	
 	@Timestamp(key: "created_at", on: .create)
 	var createdAt: Date?
@@ -32,7 +32,6 @@ final class Team: Model, Content, @unchecked Sendable {
 	@Field(key: "is_active")
 	var isActive: Bool
 	
-	// Propriétés calculées
 	var memberCount: Int {
 		return members.count
 	}
@@ -62,21 +61,21 @@ final class Team: Model, Content, @unchecked Sendable {
 		return managerId == userId
 	}
 	
-	// Initializer
+
+
 	init() {}
 	
 	init(id: UUID? = nil, name: String, description: String, managerId: UUID, color: String = "#007AFF") {
 		self.id = id
 		self.name = name
 		self.description = description
-		self.members = [managerId] // Le manager est automatiquement membre
+		self.members = [managerId] 
 		self.managerId = managerId
 		self.color = color
 		self.isActive = true
 	}
 }
 
-// MARK: - Validations
 extension Team: Validatable {
 	static func validations(_ validations: inout Validations) {
 		validations.add("name", as: String.self, is: !.empty && .count(2...50))

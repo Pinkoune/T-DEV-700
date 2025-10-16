@@ -24,7 +24,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	var phone: String
 	
 	@Field(key: "role")
-	var role: String // "manager", "employee"
+	var role: String 
 	
 	@OptionalField(key: "department")
 	var department: String?
@@ -45,16 +45,14 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	var isActive: Bool
 	
 	@Field(key: "weekly_hours_target")
-	var weeklyHoursTarget: Double // Objectif d'heures par semaine
+	var weeklyHoursTarget: Double 
 	
-	// Relations
 	@Children(for: \.$user)
 	var timeEntries: [TimeEntry]
 	
 	@Children(for: \.$user)
 	var performances: [Performance]
 	
-	// Propriétés calculées
 	var fullName: String {
 		return "\(firstName) \(lastName)"
 	}
@@ -86,7 +84,8 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 		}
 	}
 	
-	// Initializer
+	
+	
 	init() {}
 	
 	init(id: UUID? = nil, firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
@@ -105,7 +104,6 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	}
 }
 
-// MARK: - Validations
 extension User: Validatable {
 	static func validations(_ validations: inout Validations) {
 		validations.add("firstName", as: String.self, is: !.empty && .count(2...50))
@@ -117,7 +115,6 @@ extension User: Validatable {
 	}
 }
 
-// MARK: - DTO for API responses
 struct UserDTO: Content {
 	let id: UUID
 	let firstName: String

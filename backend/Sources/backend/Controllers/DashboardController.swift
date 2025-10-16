@@ -5,13 +5,10 @@ struct DashboardController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let dashboard = routes.grouped("dashboard")
         
-        // Routes protégées par JWT
         let protected = dashboard.grouped(JWTAuthMiddleware())
         
-        // Dashboard utilisateur (accessible par tous les authentifiés)
         protected.get("user", ":userID", use: getUserDashboard)
         
-        // Routes managers seulement
         let manager = protected.grouped(ManagerMiddleware())
         manager.get("team", ":teamID", "hours", use: getTeamHoursStats)
         manager.get("employee", ":userID", "hours", use: getEmployeeHoursStats)
@@ -162,7 +159,7 @@ struct DashboardController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // Récupérer la période depuis les query params (week ou month)
+        // On va récupérer la période depuis les query params (week ou month)
         let period = req.query[String.self, at: "period"] ?? "month"
         
         let calendar = Calendar.current
@@ -178,7 +175,7 @@ struct DashboardController: RouteCollection {
             startDate = calendar.dateInterval(of: .month, for: now)?.start ?? now
         }
         
-        // Récupérer toutes les entrées de temps des membres de l'équipe
+        // Récupération de toutes les entrées de temps des membres de l'équipe
         var memberStats: [MemberHoursStats] = []
         var totalTeamHours = 0.0
         var totalDaysWorked = 0
@@ -261,7 +258,7 @@ struct DashboardController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Récupérer la période depuis les query params
+        // Récupération de la période depuis les query params
         let period = req.query[String.self, at: "period"] ?? "month"
         
         let calendar = Calendar.current
@@ -277,7 +274,7 @@ struct DashboardController: RouteCollection {
             startDate = calendar.dateInterval(of: .month, for: now)?.start ?? now
         }
         
-        // Récupérer toutes les entrées de temps
+        // Récupération de toutes les entrées de temps
         let timeEntries = try await TimeEntry.query(on: req.db)
             .filter(\.$user.$id == userID)
             .filter(\.$createdAt >= startDate)

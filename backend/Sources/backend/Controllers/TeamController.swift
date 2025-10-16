@@ -5,15 +5,14 @@ struct TeamController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let teams = routes.grouped("teams")
         
-        // Routes protégées par JWT
         let protected = teams.grouped(JWTAuthMiddleware())
         
-        // Routes accessibles par tous les authentifiés
+        // Routes accessibles par tout le monde
         protected.get(use: getAllTeams)
         protected.get("search", use: searchTeams)
         protected.get("active", use: getActiveTeams)
         
-        // Routes managers seulement
+        // Routes accessibles par les managers uniquement => mise en place de la protection des routes
         let manager = protected.grouped(ManagerMiddleware())
         manager.post(use: createTeam)
         manager.get("by-manager", ":managerID", use: getTeamsByManager)
@@ -23,12 +22,10 @@ struct TeamController: RouteCollection {
             team.put(use: updateTeam)
             team.delete(use: deleteTeam)
             
-            // Gestion des membres (managers)
             team.get("members", use: getTeamMembers)
             team.post("members", ":userID", use: addMember)
             team.delete("members", ":userID", use: removeMember)
             
-            // Statistiques de l'équipe (managers)
             team.get("stats", use: getTeamStats)
             team.get("performance", use: getTeamPerformance)
         }
@@ -53,7 +50,7 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // Récupérer les détails des membres
+        // Récupéreration des détails des membres présent dans une équipe donnée. 
         var memberDetails: [UserResponse] = []
         for memberID in team.members {
             if let user = try await User.find(memberID, on: req.db) {
@@ -61,7 +58,7 @@ struct TeamController: RouteCollection {
             }
         }
         
-        // Récupérer les détails du manager
+        // Pareil que pour les membres sauf qu'ici on récupère les détails concernant le manager de l'équipe. 
         let manager = try await User.find(team.managerId, on: req.db)
         
         return TeamDetailResponse(
@@ -100,7 +97,7 @@ struct TeamController: RouteCollection {
         return TeamResponse(from: team)
     }
     
-    /// PUT /teams/:teamID - Met à jour une équipe
+    /// PUT /teams/:teamID - Mise à jour d'une équipe(nom, description, managerId, membres)
     func updateTeam(req: Request) async throws -> TeamResponse {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -119,7 +116,6 @@ struct TeamController: RouteCollection {
             team.description = description
         }
         if let managerId = updateData.managerId {
-            // Vérifier que le nouveau manager existe
             guard let _ = try await User.find(managerId, on: req.db) else {
                 throw Abort(.badRequest, reason: "Nouveau manager non trouvé")
             }
@@ -137,7 +133,7 @@ struct TeamController: RouteCollection {
         return TeamResponse(from: team)
     }
     
-    /// DELETE /teams/:teamID - Désactive une équipe (soft delete)
+    /// DELETE /teams/:teamID - Désactivation d'une équipe sans la supprimer
     func deleteTeam(req: Request) async throws -> HTTPStatus {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -154,38 +150,33 @@ struct TeamController: RouteCollection {
         return .noContent
     }
     
-    // MARK: - Member Management
     
-    /// POST /teams/:teamID/members/:userID - Ajoute un membre à l'équipe
+    /// POST /teams/:teamID/members/:userID - Ajoute un membre à l'équipe 
     func addMember(req: Request) async throws -> HTTPStatus {
         guard let teamID = req.parameters.get("teamID", as: UUID.self),
               let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe ou utilisateur invalide")
         }
         
-        // Vérifier que l'utilisateur existe
         guard let _ = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Vérifier que l'équipe existe
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // Vérifier que l'utilisateur n'est pas déjà membre
         if team.isMember(userID) {
             throw Abort(.conflict, reason: "L'utilisateur est déjà membre de cette équipe")
         }
         
-        // Ajouter le membre
         team.members.append(userID)
         try await team.save(on: req.db)
         
         return .created
     }
     
-    /// DELETE /teams/:teamID/members/:userID - Retire un membre de l'équipe
+    /// DELETE /teams/:teamID/members/:userID - Suppression d'un membre de l'équipe 
     func removeMember(req: Request) async throws -> HTTPStatus {
         guard let teamID = req.parameters.get("teamID", as: UUID.self),
               let userID = req.parameters.get("userID", as: UUID.self) else {
@@ -196,24 +187,21 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // Vérifier que l'utilisateur est membre
         if !team.isMember(userID) {
             throw Abort(.notFound, reason: "L'utilisateur n'est pas membre de cette équipe")
         }
         
-        // Ne pas permettre de retirer le manager
         if team.isManager(userID) {
             throw Abort(.badRequest, reason: "Impossible de retirer le manager de l'équipe")
         }
         
-        // Retirer le membre
         team.members.removeAll { $0 == userID }
         try await team.save(on: req.db)
         
         return .noContent
     }
     
-    /// GET /teams/:teamID/members - Récupère les membres de l'équipe
+    /// GET /teams/:teamID/members - Récupèration des membres de l'équipe
     func getTeamMembers(req: Request) async throws -> [UserResponse] {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -232,10 +220,8 @@ struct TeamController: RouteCollection {
         
         return members
     }
-    
-    // MARK: - Statistics & Performance
-    
-    /// GET /teams/:teamID/stats - Statistiques de l'équipe
+        
+    /// GET /teams/:teamID/stats - Statistiques de l'équipe en fonction de la période et des performances. 
     func getTeamStats(req: Request) async throws -> TeamStatsResponse {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -361,7 +347,6 @@ struct TeamController: RouteCollection {
     }
 }
 
-// MARK: - Request/Response Models
 
 struct CreateTeamRequest: Content, Validatable {
     let name: String
