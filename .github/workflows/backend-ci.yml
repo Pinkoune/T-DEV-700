@@ -51,7 +51,7 @@ jobs:
 
   test:
     name: Test Backend
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     
     services:

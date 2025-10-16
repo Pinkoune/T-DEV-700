@@ -1,27 +1,13 @@
 import Vapor
 
-struct AdminMiddleware: AsyncMiddleware {
-    func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
-        guard let user = request.auth.get(User.self) else {
-            throw Abort(.unauthorized, reason: "Non authentifié")
-        }
-        
-        if user.role != "admin" {
-            throw Abort(.forbidden, reason: "Accès réservé aux administrateurs")
-        }
-        
-        return try await next.respond(to: request)
-    }
-}
-
 struct ManagerMiddleware: AsyncMiddleware {
     func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
         guard let user = request.auth.get(User.self) else {
             throw Abort(.unauthorized, reason: "Non authentifié")
         }
         
-        if user.role != "manager" && user.role != "admin" {
-            throw Abort(.forbidden, reason: "Accès réservé aux managers")
+        if user.role != "manager" {
+            throw Abort(.forbidden, reason: "Accès réservé")
         }
         
         return try await next.respond(to: request)

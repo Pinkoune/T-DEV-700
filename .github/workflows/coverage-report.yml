@@ -9,7 +9,7 @@ on:
 jobs:
   report:
     name: Generate Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:

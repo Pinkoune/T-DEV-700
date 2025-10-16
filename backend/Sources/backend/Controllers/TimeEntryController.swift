@@ -8,11 +8,10 @@ struct TimeEntryController: RouteCollection {
         // Routes protégées par JWT
         let protected = timeEntries.grouped(JWTAuthMiddleware())
         
-        // Routes admin/manager
-        let admin = protected.grouped(AdminMiddleware())
-        admin.get(use: getAllTimeEntries)
+        // Routes managers
+        let manager = protected.grouped(ManagerMiddleware())
+        manager.get(use: getAllTimeEntries)
         
-        // Routes accessibles par tous les authentifiés
         protected.post(use: createTimeEntry)
         protected.group(":timeEntryID") { timeEntry in
             timeEntry.get(use: getTimeEntry)

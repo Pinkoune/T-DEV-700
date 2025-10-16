@@ -24,7 +24,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	var phone: String
 	
 	@Field(key: "role")
-	var role: String // "admin", "manager", "employee"
+	var role: String // "manager", "employee"
 	
 	@OptionalField(key: "department")
 	var department: String?
@@ -66,12 +66,9 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	}
 	
 	var isManager: Bool {
-		return role == "manager" || role == "admin"
+		return role == "manager"
 	}
 	
-	var isAdmin: Bool {
-		return role == "admin"
-	}
 	
 	var yearsOfService: Int? {
 		guard let hireDate = hireDate else { return nil }
@@ -80,8 +77,6 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	
 	var displayRole: String {
 		switch role {
-		case "admin":
-			return "Administrateur"
 		case "manager":
 			return "Manager"
 		case "employee":
@@ -117,7 +112,7 @@ extension User: Validatable {
 		validations.add("lastName", as: String.self, is: !.empty && .count(2...50))
 		validations.add("email", as: String.self, is: .email)
 		validations.add("phone", as: String.self, is: .count(10...15))
-		validations.add("role", as: String.self, is: .in("admin", "manager", "employee"))
+		validations.add("role", as: String.self, is: .in("manager", "employee"))
 		validations.add("weeklyHoursTarget", as: Double.self, is: .range(1...80))
 	}
 }

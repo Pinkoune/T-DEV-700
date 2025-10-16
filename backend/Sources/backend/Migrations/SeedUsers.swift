@@ -4,24 +4,11 @@ import Vapor
 struct SeedUsers: AsyncMigration {
     func prepare(on database: Database) async throws {
         let passwords = [
-            try Bcrypt.hash("Admin2024!"),
             try Bcrypt.hash("Manager123!"),
             try Bcrypt.hash("Employee2024!"),
             try Bcrypt.hash("Secure123!"),
             try Bcrypt.hash("Welcome2024!")
         ]
-        
-        let admin = User(
-            firstName: "Admin",
-            lastName: "System",
-            email: "admin@company.com",
-            passwordHash: passwords[0],
-            phone: "0601000000",
-            role: "admin",
-            department: "Direction",
-            position: "Administrateur Système"
-        )
-        try await admin.save(on: database)
         
         let managerNames = [
             ("Sophie", "Dubois", "IT", "Chef de Projet IT"),
@@ -46,7 +33,7 @@ struct SeedUsers: AsyncMigration {
                 firstName: manager.0,
                 lastName: manager.1,
                 email: "\(manager.0.lowercased()).\(manager.1.lowercased())@company.com",
-                passwordHash: passwords[1],
+                passwordHash: passwords[0],
                 phone: String(format: "06%08d", 1000001 + index),
                 role: "manager",
                 department: manager.2,
@@ -92,7 +79,7 @@ struct SeedUsers: AsyncMigration {
                 firstName: firstName,
                 lastName: lastName,
                 email: "\(firstName.lowercased()).\(lastName.lowercased())\(i)@company.com",
-                passwordHash: passwords[2 + (i % 3)],
+                passwordHash: passwords[1 + (i % 3)],
                 phone: String(format: "06%08d", 2000001 + i),
                 role: "employee",
                 department: department,
@@ -102,7 +89,7 @@ struct SeedUsers: AsyncMigration {
             employeeCount += 1
         }
         
-        print("✅ Seed terminé : 1 admin + 15 managers + \(employeeCount) employés = \(1 + 15 + employeeCount) utilisateurs")
+        print("✅ Seed terminé : 15 managers + \(employeeCount) employés = \(15 + employeeCount) utilisateurs")
     }
 
     func revert(on database: Database) async throws {

@@ -5,18 +5,16 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("users")
         
-        // Routes protégées par JWT
         let protected = users.grouped(JWTAuthMiddleware())
         
-        // Routes admin seulement
-        let admin = protected.grouped(AdminMiddleware())
-        admin.get(use: getAllUsers)
-        admin.post(use: createUser)
-        admin.delete(":userID", use: deleteUser)
-        admin.get("by-role", ":role", use: getUsersByRole)
-        admin.get("active", use: getActiveUsers)
+        let manager = protected.grouped(ManagerMiddleware())
+        manager.get(use: getAllUsers)
+        manager.post(use: createUser)
+        manager.delete(":userID", use: deleteUser)
+        manager.get("by-role", ":role", use: getUsersByRole)
+        manager.get("active", use: getActiveUsers)
         
-        // Routes accessibles par l'utilisateur lui-même ou admin
+        // Routes accessibles par l'utilisateur lui-même ou manager
         protected.group(":userID") { user in
             user.get(use: getUser)
             user.put(use: updateUser)
@@ -26,11 +24,10 @@ struct UserController: RouteCollection {
             user.get("performances", use: getUserPerformances)
         }
         
-        // Routes de recherche (authentifié)
         protected.get("search", use: searchUsers)
     }
     
-    // MARK: - CRUD Operations
+
     
     /// GET /users - Récupère tous les utilisateurs
     func getAllUsers(req: Request) async throws -> [UserResponse] {
@@ -61,7 +58,6 @@ struct UserController: RouteCollection {
         try CreateUserRequest.validate(content: req)
         let userData = try req.content.decode(CreateUserRequest.self)
         
-        // Vérifier que l'email n'existe pas déjà
         let existingUser = try await User.query(on: req.db)
             .filter(\.$email == userData.email.lowercased())
             .first()
@@ -70,11 +66,9 @@ struct UserController: RouteCollection {
             throw Abort(.conflict, reason: "Un utilisateur avec cet email existe déjà")
         }
         
-        // Générer un mot de passe par défaut hashé
         let defaultPassword = "Welcome2024!"
         let passwordHash = try req.password.hash(defaultPassword)
         
-        // Créer le nouvel utilisateur
         let user = User(
             firstName: userData.firstName,
             lastName: userData.lastName,
@@ -112,7 +106,6 @@ struct UserController: RouteCollection {
             user.lastName = lastName
         }
         if let email = updateData.email {
-            // Vérifier que le nouvel email n'existe pas déjà
             let existingUser = try await User.query(on: req.db)
                 .filter(\.$email == email.lowercased())
                 .filter(\.$id != userID)
@@ -157,7 +150,6 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Soft delete : marquer comme inactif au lieu de supprimer
         user.isActive = false
         try await user.save(on: req.db)
         
@@ -176,7 +168,6 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Charger les relations
         try await user.$timeEntries.load(on: req.db)
         try await user.$performances.load(on: req.db)
         
@@ -193,7 +184,7 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Trouver toutes les équipes où l'utilisateur est membre
+        // Trouve toutes les équipes où l'utilisateur est membre
         let allTeams = try await Team.query(on: req.db).all()
         let teams = allTeams.filter { $0.isMember(userID) }
         
