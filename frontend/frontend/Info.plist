@@ -4,8 +4,7 @@
 <dict>
 	<key>UIAppFonts</key>
 	<array>
-		<string>mcdonalds-helvetica.ttf</string>
-		<string>BBHSansHegarty-Regular.ttf</string>
+		<string>McDonaldsHelvetica.ttf</string>
 	</array>
 </dict>
 </plist>

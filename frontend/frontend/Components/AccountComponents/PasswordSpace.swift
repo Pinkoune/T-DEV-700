@@ -16,7 +16,7 @@ struct PasswordSpace: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Changer mot de passe")
-                .font(.system(size: 22, weight: .bold))
+                .font(.custom("McDonaldsHelvetica", size: 22))
                 .foregroundColor(.white)
                 .padding(.bottom, 5)
             

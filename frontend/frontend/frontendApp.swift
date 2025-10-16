@@ -6,12 +6,20 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @main
 struct frontendApp: App {
+    @State private var didStartAudio = false
     var body: some Scene {
         WindowGroup {
             Login()
+                .onAppear {
+                    if !didStartAudio {
+                        AudioManager.shared.startBackgroundAmbient()
+                        didStartAudio = true
+                    }
+                }
         }
     }
 }

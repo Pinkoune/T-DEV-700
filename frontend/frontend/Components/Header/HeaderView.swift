@@ -8,12 +8,6 @@ enum UserType {
     case manager
 }
 
-//extension Color {
-//    static let mainYellow = Color.yellow
-//    static let mainGreen = Color.green
-//}
-
-
 struct HeaderView: View {
     let userType: UserType
     let title: String
@@ -31,10 +25,13 @@ struct HeaderView: View {
         Image(systemName: "apple.logo")
             .font(.system(size: 60))
             .foregroundStyle(appleColor)
-        
+            .onLongPressGesture(minimumDuration: 5) {
+                AudioManager.shared.toggleBackgroundAmbient()
+            }
+            .accessibilityAddTraits(.isButton)
         HStack {
             Text(title)
-                .font(.title)
+                .font(.custom("McDonaldsHelvetica", size: 28))
                 .fontWeight(.bold)
                 .foregroundColor(.white)
             Spacer()

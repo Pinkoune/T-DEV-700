@@ -36,6 +36,10 @@ struct EmployeeAccount: View {
                                 onEditEmail: { showEditEmail = true }
                             )
                             
+                            Divider()
+                                .background(Color.white.opacity(0.3))
+                                .padding(.vertical, 10)
+
                             PasswordSpace(
                                 currentPassword: $currentPassword,
                                 newPassword: $newPassword,

@@ -20,7 +20,7 @@ struct EmployeeHomePage: View {
                     
                     Spacer()
                 }
-                
+
             }
     }
 }

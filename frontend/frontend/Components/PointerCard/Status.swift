@@ -7,7 +7,7 @@ struct StatusBadge: View {
                 .foregroundColor(.mainYellow)
                 .font(.system(size: 14))
             Text("En cours")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.custom("McDonaldsHelvetica", size: 16))
                 .foregroundColor(.white)
             Spacer()
             Circle()
