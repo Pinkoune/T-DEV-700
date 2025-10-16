@@ -31,7 +31,7 @@ struct PointerBtn: View {
         }) {
             VStack(spacing: 4) {
                 Text("COLLECTER+")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.custom("McDonaldsHelvetica", size: 20))
                     .foregroundColor(.white)
                 Text("(Pointer le début du journée)")
                     .font(.system(size: 12))
