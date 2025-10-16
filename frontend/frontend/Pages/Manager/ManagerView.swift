@@ -5,24 +5,25 @@ struct ManagerView: View {
     @State private var selectedTab: Int = 0
     
     var body: some View {
-        ZStack {
-            Group {
-                if selectedTab == 0 {
-                    ManagerHomePage()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .ignoresSafeArea(.all)
-                } else {
-                    ManagerProfile()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationStack{
+            ZStack {
+                Group {
+                    if selectedTab == 0 {
+                        ManagerHomePage()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ManagerAccount()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+                
+                VStack {
+                    Spacer()
+                    SliderNavbar(selectedTab: $selectedTab)
                 }
             }
-            
-            VStack {
-                Spacer()
-                SliderNavbar(selectedTab: $selectedTab)
-            }
+            .ignoresSafeArea(edges: .bottom)
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 
@@ -39,7 +40,7 @@ struct SliderNavbar: View {
         ZStack(alignment: .bottom) {
 
             BottomShape()
-                .fill(Color.mainGreen)
+                .fill(.mainGreen)
 //                .background(.ultraThinMaterial)
                 .frame(height: 200)
                 .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -5)
@@ -104,7 +105,7 @@ struct SliderNavbar: View {
             .padding(.bottom, 40)
             .background(
                 RoundedRectangle(cornerRadius: 100)
-                    .fill(Color.mainGreen.opacity(1))
+                    .fill(.mainGreen.opacity(1))
                     .shadow(color: .greenNavbar.opacity(0.8), radius: 10
                             , x: 0, y: 0)
                     
