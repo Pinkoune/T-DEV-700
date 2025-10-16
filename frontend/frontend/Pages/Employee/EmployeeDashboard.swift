@@ -16,7 +16,7 @@ struct EmployeeDashboard: View {
             Color(.mainGreen)
                 .edgesIgnoringSafeArea(.all)
             VStack {
-                HeaderView(title: "Activité récente")
+                HeaderView(userType: .employee, title: "Activité récente")
                 
                 PointerCardMini()
                     .padding(.horizontal, 16)
@@ -36,7 +36,7 @@ struct EmployeeDashboard: View {
             }
             VStack{
                 Spacer()
-                Navbar()
+                Navbar(userType: .employee)
                     .ignoresSafeArea(edges: .all)
                     
                   .padding(.bottom, 0)

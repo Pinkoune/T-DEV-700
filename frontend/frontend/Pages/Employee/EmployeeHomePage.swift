@@ -10,7 +10,7 @@ struct EmployeeHomePage: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    HeaderView(title: "Bonjour Ronald,")
+                    HeaderView(userType: .employee, title: "Bonjour Ronald,")
 
                     PointerCard()
                         .padding(.horizontal, 16)
@@ -24,7 +24,7 @@ struct EmployeeHomePage: View {
                 
                 VStack{
                     Spacer()
-                    Navbar()
+                    Navbar(userType: .employee)
                         .ignoresSafeArea(edges: .all)
                         
                       .padding(.bottom, 0)

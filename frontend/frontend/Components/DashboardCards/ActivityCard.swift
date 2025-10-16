@@ -62,3 +62,16 @@ struct ActivityCard: View {
         .padding(.horizontal, 15)
     }
 }
+
+#Preview {
+    ActivityCard(activity: TimeEntry(
+        id: "1",
+        title: "Exemple d'activité",
+        subtitle: "Développement",
+        startTime: "09:00",
+        endTime: "17:00",
+        timeSpent: "8h00",
+        isActive: false
+    ))
+}
+
