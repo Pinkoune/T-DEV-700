@@ -14,17 +14,14 @@ struct AuthController: RouteCollection {
     func login(req: Request) async throws -> LoginResponse {
         let loginData = try req.content.decode(LoginRequest.self)
         
-        // Validation de l'email
         guard isValidEmailDomain(loginData.email) else {
             throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé. Veuillez utiliser une adresse email professionnelle ou personnelle valide.")
         }
         
-        // Validation du mot de passe
         guard isValidPassword(loginData.password) else {
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
         
-        // Recherche de l'utilisateur dans PostgreSQL
         guard let user = try await User.query(on: req.db)
             .filter(\.$email == loginData.email.lowercased())
             .filter(\.$isActive == true)
@@ -33,19 +30,17 @@ struct AuthController: RouteCollection {
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
         
-        // Vérification du mot de passe avec bcrypt
         let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
         
         if !isPasswordValid {
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
         
-        // Génération du JWT
         let payload = UserJWTPayload(
             userId: user.id!.uuidString,
             email: user.email,
             role: user.role,
-            exp: .init(value: Date().addingTimeInterval(86400)) // 24 heures
+            exp: .init(value: Date().addingTimeInterval(86400))
         )
         
         let token = try req.jwt.sign(payload)
@@ -62,17 +57,14 @@ struct AuthController: RouteCollection {
     func register(req: Request) async throws -> LoginResponse {
         let registerData = try req.content.decode(RegisterRequest.self)
         
-        // Validation de l'email
         guard isValidEmailDomain(registerData.email) else {
             throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé")
         }
         
-        // Validation du mot de passe
         guard isValidPassword(registerData.password) else {
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
         
-        // Vérifier l'existence de l'email
         let existingUser = try await User.query(on: req.db)
             .filter(\.$email == registerData.email.lowercased())
             .first()
@@ -83,7 +75,6 @@ struct AuthController: RouteCollection {
         
         let passwordHash = try req.password.hash(registerData.password)
         
-        // Création de l'utilisateur
         let user = User(
             firstName: registerData.firstName,
             lastName: registerData.lastName,
@@ -159,7 +150,6 @@ struct AuthController: RouteCollection {
         
         let domain = String(components[1])
         
-        // Permet de vérifier si le domaine est bloqué ou non  
         return !blockedDomains.contains(where: { domain.contains($0) })
     }
 }
