@@ -33,6 +33,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateTimeEntry())
     app.migrations.add(CreatePerformance())
     app.migrations.add(AddPasswordHashToUser())
+    app.migrations.add(AddExpectedArrivalTime())
     app.migrations.add(SeedUsers())
     
     // Auto-migrate in development

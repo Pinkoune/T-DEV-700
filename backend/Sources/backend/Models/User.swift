@@ -47,6 +47,9 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	@Field(key: "weekly_hours_target")
 	var weeklyHoursTarget: Double 
 	
+	@Field(key: "expected_arrival_time")
+	var expectedArrivalTime: String
+	
 	@Children(for: \.$user)
 	var timeEntries: [TimeEntry]
 	
@@ -88,7 +91,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	
 	init() {}
 	
-	init(id: UUID? = nil, firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
+	init(id: UUID? = nil, firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0, expectedArrivalTime: String = "09:00") {
 		self.id = id
 		self.firstName = firstName
 		self.lastName = lastName
@@ -101,6 +104,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 		self.hireDate = Date()
 		self.isActive = true
 		self.weeklyHoursTarget = weeklyHoursTarget
+		self.expectedArrivalTime = expectedArrivalTime
 	}
 }
 

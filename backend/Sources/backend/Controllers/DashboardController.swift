@@ -102,11 +102,20 @@ struct DashboardController: RouteCollection {
         }
         
         var overtimeHours = 0.0
+        var lateCount = 0
+        var totalLateMinutes = 0
         for entry in monthTimeEntries {
             if entry.isOvertime {
                 overtimeHours = overtimeHours + entry.overtimeHours
             }
+            if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
+                lateCount += 1
+                totalLateMinutes += entry.lateMinutes(expectedArrivalTime: user.expectedArrivalTime)
+            }
         }
+        
+        let latenessRate = monthTimeEntries.count > 0 ? (Double(lateCount) / Double(monthTimeEntries.count)) * 100 : 0.0
+        let averageLateMinutes = lateCount > 0 ? Double(totalLateMinutes) / Double(lateCount) : 0.0
         
         var status = "offline"
         if activeEntry != nil {
@@ -135,7 +144,10 @@ struct DashboardController: RouteCollection {
             averageHoursPerDayWeek: averageHoursPerDayWeek,
             daysWorkedThisMonth: daysWorkedMonth,
             daysWorkedThisWeek: daysWorkedWeek,
-            overtimeHours: overtimeHours
+            overtimeHours: overtimeHours,
+            latenessRate: latenessRate,
+            lateCount: lateCount,
+            averageLateMinutes: averageLateMinutes
         )
         
         return UserDashboardResponse(
@@ -284,12 +296,18 @@ struct DashboardController: RouteCollection {
         
         var totalHours = 0.0
         var overtimeHours = 0.0
+        var lateCount = 0
+        var totalLateMinutes = 0
         for entry in timeEntries {
             if let hours = entry.hoursWorked {
                 totalHours = totalHours + hours
             }
             if entry.isOvertime {
                 overtimeHours = overtimeHours + entry.overtimeHours
+            }
+            if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
+                lateCount = lateCount + 1
+                totalLateMinutes = totalLateMinutes + entry.lateMinutes(expectedArrivalTime: user.expectedArrivalTime)
             }
         }
         
@@ -307,6 +325,16 @@ struct DashboardController: RouteCollection {
             averageHoursPerDay = totalHours / Double(daysWorked)
         }
         
+        var latenessRate = 0.0
+        if timeEntries.count > 0 {
+            latenessRate = (Double(lateCount) / Double(timeEntries.count)) * 100
+        }
+        
+        var averageLateMinutes = 0.0
+        if lateCount > 0 {
+            averageLateMinutes = Double(totalLateMinutes) / Double(lateCount)
+        }
+        
         var dailyStats: [DailyHoursStats] = []
         var weeklyStats: [WeeklyHoursStats] = []
         
@@ -314,6 +342,8 @@ struct DashboardController: RouteCollection {
             var dayTotal = 0.0
             var dayOvertime = 0.0
             var dayCount = 0
+            var dayLateMinutes = 0
+            var dayWasLate = false
             
             for entry in timeEntries {
                 let entryDay = calendar.startOfDay(for: entry.arrival)
@@ -324,6 +354,10 @@ struct DashboardController: RouteCollection {
                     if entry.isOvertime {
                         dayOvertime = dayOvertime + entry.overtimeHours
                     }
+                    if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
+                        dayWasLate = true
+                        dayLateMinutes = dayLateMinutes + entry.lateMinutes(expectedArrivalTime: user.expectedArrivalTime)
+                    }
                     dayCount = dayCount + 1
                 }
             }
@@ -332,7 +366,9 @@ struct DashboardController: RouteCollection {
                 date: day,
                 totalHours: dayTotal,
                 overtimeHours: dayOvertime,
-                entriesCount: dayCount
+                entriesCount: dayCount,
+                lateMinutes: dayLateMinutes,
+                wasLate: dayWasLate
             ))
         }
         
@@ -347,7 +383,11 @@ struct DashboardController: RouteCollection {
                 overtimeHours: overtimeHours,
                 daysWorked: daysWorked,
                 averageHoursPerDay: averageHoursPerDay,
-                weeklyTarget: user.weeklyHoursTarget
+                weeklyTarget: user.weeklyHoursTarget,
+                latenessRate: latenessRate,
+                lateCount: lateCount,
+                totalLateMinutes: totalLateMinutes,
+                averageLateMinutes: averageLateMinutes
             ),
             dailyStats: dailyStats,
             weeklyStats: weeklyStats
@@ -373,6 +413,9 @@ struct DashboardStats: Content {
     let daysWorkedThisMonth: Int
     let daysWorkedThisWeek: Int
     let overtimeHours: Double
+    let latenessRate: Double
+    let lateCount: Int
+    let averageLateMinutes: Double
 }
 
 struct TeamHoursStatsResponse: Content {
@@ -413,6 +456,10 @@ struct EmployeeHoursSummary: Content {
     let daysWorked: Int
     let averageHoursPerDay: Double
     let weeklyTarget: Double
+    let latenessRate: Double
+    let lateCount: Int
+    let totalLateMinutes: Int
+    let averageLateMinutes: Double
 }
 
 struct DailyHoursStats: Content {
@@ -420,6 +467,8 @@ struct DailyHoursStats: Content {
     let totalHours: Double
     let overtimeHours: Double
     let entriesCount: Int
+    let lateMinutes: Int
+    let wasLate: Bool
 }
 
 struct WeeklyHoursStats: Content {

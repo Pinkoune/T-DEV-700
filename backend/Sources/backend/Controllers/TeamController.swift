@@ -257,13 +257,47 @@ struct TeamController: RouteCollection {
         
         let averagePerformance = performanceCount > 0 ? totalPerformance / Double(performanceCount) : 0.0
         
+        // Calculer le lateness rate de l'équipe (ce mois)
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
+        
+        var totalEntries = 0
+        var totalLateEntries = 0
+        var totalLateMinutes = 0
+        
+        for memberID in team.members {
+            guard let user = try await User.find(memberID, on: req.db) else { continue }
+            
+            let entries = try await TimeEntry.query(on: req.db)
+                .filter(\.$user.$id == memberID)
+                .filter(\.$createdAt >= startOfMonth)
+                .filter(\.$status == "completed")
+                .all()
+            
+            totalEntries += entries.count
+            
+            for entry in entries {
+                if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
+                    totalLateEntries += 1
+                    totalLateMinutes += entry.lateMinutes(expectedArrivalTime: user.expectedArrivalTime)
+                }
+            }
+        }
+        
+        let latenessRate = totalEntries > 0 ? (Double(totalLateEntries) / Double(totalEntries)) * 100 : 0.0
+        let averageLateMinutes = totalLateEntries > 0 ? Double(totalLateMinutes) / Double(totalLateEntries) : 0.0
+        
         return TeamStatsResponse(
             teamId: teamID.uuidString,
             totalMembers: team.memberCount,
             activeTimeEntries: activeTimeEntries,
             averagePerformance: averagePerformance,
             teamSize: team.teamSize,
-            isLargeTeam: team.isLargeTeam
+            isLargeTeam: team.isLargeTeam,
+            latenessRate: latenessRate,
+            totalLateEntries: totalLateEntries,
+            averageLateMinutes: averageLateMinutes
         )
     }
     
@@ -409,6 +443,9 @@ struct TeamStatsResponse: Content {
     let averagePerformance: Double
     let teamSize: String
     let isLargeTeam: Bool
+    let latenessRate: Double
+    let totalLateEntries: Int
+    let averageLateMinutes: Double
 }
 
 struct TeamMemberPerformance: Content {

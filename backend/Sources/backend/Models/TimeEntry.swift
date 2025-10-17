@@ -71,6 +71,32 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 		}
 	}
 	
+	func isLate(expectedArrivalTime: String) -> Bool {
+		guard let expectedTime = parseTime(expectedArrivalTime) else { return false }
+		let actualTime = getTimeComponents(from: arrival)
+		return actualTime > expectedTime
+	}
+	
+	func lateMinutes(expectedArrivalTime: String) -> Int {
+		guard let expectedTime = parseTime(expectedArrivalTime) else { return 0 }
+		let actualTime = getTimeComponents(from: arrival)
+		let diff = actualTime - expectedTime
+		return max(0, diff)
+	}
+	
+	private func parseTime(_ timeString: String) -> Int? {
+		let components = timeString.split(separator: ":").compactMap { Int($0) }
+		guard components.count == 2 else { return nil }
+		return components[0] * 60 + components[1]
+	}
+	
+	private func getTimeComponents(from date: Date) -> Int {
+		let calendar = Calendar.current
+		let hour = calendar.component(.hour, from: date)
+		let minute = calendar.component(.minute, from: date)
+		return hour * 60 + minute
+	}
+	
 
 
 	init() {}
