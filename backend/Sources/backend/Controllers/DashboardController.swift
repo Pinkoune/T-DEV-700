@@ -14,6 +14,12 @@ struct DashboardController: RouteCollection {
         manager.get("employee", ":userID", "hours", use: getEmployeeHoursStats)
     }
     
+    private func isWeekend(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: date)
+        return weekday == 1 || weekday == 7
+    }
+    
     // Dashboard utilisateur
     func getUserDashboard(req: Request) async throws -> UserDashboardResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
@@ -58,7 +64,7 @@ struct DashboardController: RouteCollection {
         var daysMonth: [Date] = []
         for entry in monthTimeEntries {
             let day = calendar.startOfDay(for: entry.arrival)
-            if !daysMonth.contains(day) {
+            if !daysMonth.contains(day) && !isWeekend(day) {
                 daysMonth.append(day)
             }
         }
@@ -67,7 +73,7 @@ struct DashboardController: RouteCollection {
         var daysWeek: [Date] = []
         for entry in weekTimeEntries {
             let day = calendar.startOfDay(for: entry.arrival)
-            if !daysWeek.contains(day) {
+            if !daysWeek.contains(day) && !isWeekend(day) {
                 daysWeek.append(day)
             }
         }
@@ -86,6 +92,7 @@ struct DashboardController: RouteCollection {
         let activeEntry = try await TimeEntry.query(on: req.db)
             .filter(\.$user.$id == userID)
             .filter(\.$status == "active")
+            .with(\.$user)
             .first()
         
         let latestPerformance = try await Performance.query(on: req.db)
@@ -213,7 +220,7 @@ struct DashboardController: RouteCollection {
             var days: [Date] = []
             for entry in timeEntries {
                 let day = calendar.startOfDay(for: entry.arrival)
-                if !days.contains(day) {
+                if !days.contains(day) && !isWeekend(day) {
                     days.append(day)
                 }
             }
@@ -314,7 +321,7 @@ struct DashboardController: RouteCollection {
         var uniqueDays: [Date] = []
         for entry in timeEntries {
             let day = calendar.startOfDay(for: entry.arrival)
-            if !uniqueDays.contains(day) {
+            if !uniqueDays.contains(day) && !isWeekend(day) {
                 uniqueDays.append(day)
             }
         }
