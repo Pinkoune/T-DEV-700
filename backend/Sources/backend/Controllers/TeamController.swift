@@ -7,12 +7,11 @@ struct TeamController: RouteCollection {
         
         let protected = teams.grouped(JWTAuthMiddleware())
         
-        // Routes accessibles par tout le monde
         protected.get(use: getAllTeams)
         protected.get("search", use: searchTeams)
         protected.get("active", use: getActiveTeams)
         
-        // Routes accessibles par les managers uniquement => mise en place de la protection des routes
+        // Routes accessibles par les managers uniquement 
         let manager = protected.grouped(ManagerMiddleware())
         manager.post(use: createTeam)
         manager.get("by-manager", ":managerID", use: getTeamsByManager)
@@ -50,7 +49,6 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // Récupéreration des détails des membres présent dans une équipe donnée. 
         var memberDetails: [UserResponse] = []
         for memberID in team.members {
             if let user = try await User.find(memberID, on: req.db) {
