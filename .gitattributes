@@ -1,21 +1,12 @@
-# Xcode project files - traiter comme binaire pour éviter corruption
 *.pbxproj binary
 *.xcscheme text
 *.xcworkspacedata text
 *.xcuserstate binary
-
-# Source files
 *.swift text
 *.h text
 *.m text
-
-# YAML files
 *.yml text
 *.yaml text
-
-# Docker files
 Dockerfile text
 *.dockerignore text
-
-# Shell scripts
 *.sh text

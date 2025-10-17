@@ -89,7 +89,7 @@ struct SeedUsers: AsyncMigration {
             employeeCount += 1
         }
         
-        print("✅ Seed terminé : 15 managers + \(employeeCount) employés = \(15 + employeeCount) utilisateurs")
+        print("Seed terminé : 15 managers + \(employeeCount) employés = \(15 + employeeCount) utilisateurs")
     }
 
     func revert(on database: Database) async throws {
