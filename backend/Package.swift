@@ -1,4 +1,3 @@
-// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -7,13 +6,9 @@ let package = Package(
        .macOS(.v13)
     ],
     dependencies: [
-        // A server-side Swift web framework.
         .package(url: "https://github.com/vapor/vapor.git", from: "4.115.0"),
-        // Fluent ORM
         .package(url: "https://github.com/vapor/fluent.git", from: "4.12.0"),
-        // PostgreSQL driver for Fluent
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.10.0"),
-        // JWT package for authentication
         .package(url: "https://github.com/vapor/jwt.git", from: "4.0.0"),
     ],
     targets: [
