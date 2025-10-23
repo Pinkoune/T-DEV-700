@@ -1,17 +1,13 @@
 {
-<<<<<<< HEAD
-  "originHash" : "f0fc6cdac707133918f7ae92c3b11e1c4674a8bfc60e8aa56b5e147a1f82872f",
-=======
-  "originHash" : "27dad66fe2b469a5542ccb873101b6b6f46a6bb16e274a3f69ee2c1315718945",
->>>>>>> 3cf58da (solution provisoire en rapport Firebase)
+  "originHash" : "7ef3b9967a42456efd7e05d73c7953078381ef72b673b071e15966070a21676d",
   "pins" : [
     {
       "identity" : "async-http-client",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/async-http-client.git",
       "state" : {
-        "revision" : "7dc119c7edf3c23f52638faadb89182861dee853",
-        "version" : "1.28.0"
+        "revision" : "8430dd49d4e2b417f472141805c9691ec2923cb8",
+        "version" : "1.29.0"
       }
     },
     {
@@ -24,24 +20,6 @@
       }
     },
     {
-      "identity" : "bcrypt",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/bcrypt.git",
-      "state" : {
-        "revision" : "a36b6f0381f2edb9fb32b8882ebc801ba8db10ef",
-        "version" : "1.1.1"
-      }
-    },
-    {
-      "identity" : "bits",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/bits.git",
-      "state" : {
-        "revision" : "03079476b04139a8b744ad96f975176df5ae12bc",
-        "version" : "1.1.1"
-      }
-    },
-    {
       "identity" : "console-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/console-kit.git",
@@ -51,27 +29,33 @@
       }
     },
     {
-<<<<<<< HEAD
-      "identity" : "core",
+      "identity" : "fluent",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/core.git",
+      "location" : "https://github.com/vapor/fluent.git",
       "state" : {
-        "revision" : "aa15871311b497a24a7f0e96b1ae6865dd600818",
-        "version" : "2.2.1"
+        "revision" : "2fe9e36daf4bdb5edcf193e0d0806ba2074d2864",
+        "version" : "4.13.0"
       }
     },
     {
-      "identity" : "debugging",
+      "identity" : "fluent-kit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/debugging.git",
+      "location" : "https://github.com/vapor/fluent-kit.git",
       "state" : {
-        "revision" : "fc5a27d6eb236141dc24e5f14eedaa2e035ae7b3",
-        "version" : "1.1.1"
+        "revision" : "8baacd7e8f7ebf68886c496b43bbe6cdcc5b57e0",
+        "version" : "1.52.2"
       }
     },
     {
-=======
->>>>>>> 3cf58da (solution provisoire en rapport Firebase)
+      "identity" : "fluent-postgres-driver",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/fluent-postgres-driver.git",
+      "state" : {
+        "revision" : "cd47a7042a529735e401bdfaa070823d151f7f94",
+        "version" : "2.11.0"
+      }
+    },
+    {
       "identity" : "jwt",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/jwt.git",
@@ -90,27 +74,6 @@
       }
     },
     {
-<<<<<<< HEAD
-=======
-      "identity" : "leaf",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/leaf.git",
-      "state" : {
-        "revision" : "b70a6108e4917f338f6b8848407bf655aa7e405f",
-        "version" : "4.5.1"
-      }
-    },
-    {
-      "identity" : "leaf-kit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/leaf-kit.git",
-      "state" : {
-        "revision" : "0c325fc46d42455914abd0105e88fe4561fc31a8",
-        "version" : "1.14.0"
-      }
-    },
-    {
->>>>>>> 3cf58da (solution provisoire en rapport Firebase)
       "identity" : "multipart-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/multipart-kit.git",
@@ -120,24 +83,39 @@
       }
     },
     {
-<<<<<<< HEAD
-      "identity" : "random",
+      "identity" : "postgres-kit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/random.git",
+      "location" : "https://github.com/vapor/postgres-kit.git",
       "state" : {
-        "revision" : "d7c4397d125caba795d14d956efacfe2a27a63d0",
-        "version" : "1.2.0"
+        "revision" : "d2fd3172c2e318bd292a4c1297e4c65a418cf6f3",
+        "version" : "2.14.1"
       }
     },
     {
-=======
->>>>>>> 3cf58da (solution provisoire en rapport Firebase)
+      "identity" : "postgres-nio",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/postgres-nio.git",
+      "state" : {
+        "revision" : "312444ea512ac9ed77fe58dcf737265ee48503cf",
+        "version" : "1.28.0"
+      }
+    },
+    {
       "identity" : "routing-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/routing-kit.git",
       "state" : {
         "revision" : "93f7222c8e195cbad39fafb5a0e4cc85a8def7ea",
         "version" : "4.9.2"
+      }
+    },
+    {
+      "identity" : "sql-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/sql-kit.git",
+      "state" : {
+        "revision" : "1a9ab0523fb742d9629558cede64290165c4285b",
+        "version" : "3.33.2"
       }
     },
     {
@@ -289,8 +267,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-transport-services.git",
       "state" : {
-        "revision" : "e645014baea2ec1c2db564410c51a656cf47c923",
-        "version" : "1.25.1"
+        "revision" : "df6c28355051c72c884574a6c858bc54f7311ff9",
+        "version" : "1.25.2"
       }
     },
     {
@@ -316,8 +294,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/swift-service-lifecycle.git",
       "state" : {
-        "revision" : "e7187309187695115033536e8fc9b2eb87fd956d",
-        "version" : "2.8.0"
+        "revision" : "0fcc4c9c2d58dd98504c06f7308c86de775396ff",
+        "version" : "2.9.0"
       }
     },
     {

@@ -1,22 +1,39 @@
 import Vapor
-import FirebaseFirestore
+import Fluent
 import Foundation
 
-struct TimeEntry: Codable, Validatable {
-	var id: String?
-	var userId: String
-	var arrival: Date
-	var departure: Date?
-	var hoursWorked: Double? // Calculé automatiquement
-	var status: String // "active", "completed", "cancelled"
-	var notes: String? // Notes optionnelles
-	var createdAt: Date
-	var updatedAt: Date
+final class TimeEntry: Model, Content, @unchecked Sendable {
+	static let schema = "time_entries"
 	
-	// Propriétés calculées
+	@ID(key: .id)
+	var id: UUID?
+	
+	@Parent(key: "user_id")
+	var user: User
+	
+	@Field(key: "arrival")
+	var arrival: Date
+	
+	@OptionalField(key: "departure")
+	var departure: Date?
+	
+	@OptionalField(key: "hours_worked")
+	var hoursWorked: Double?
+	
+	@Field(key: "status")
+	var status: String 
+	
+	@OptionalField(key: "notes")
+	var notes: String?
+	
+	@Timestamp(key: "created_at", on: .create)
+	var createdAt: Date?
+	
+	@Timestamp(key: "updated_at", on: .update)
+	var updatedAt: Date?
+	
 	var calculatedHours: Double {
 		guard let departure = departure else {
-			// Si pas encore parti, calculer depuis l'arrivée jusqu'à maintenant
 			return Date().timeIntervalSince(arrival) / 3600
 		}
 		return departure.timeIntervalSince(arrival) / 3600
@@ -54,35 +71,59 @@ struct TimeEntry: Codable, Validatable {
 		}
 	}
 	
-	// Validation
-	static func validations(_ validations: inout Validations) {
-		validations.add("userId", as: String.self, is: !.empty)
-		validations.add("status", as: String.self, is: .in("active", "completed", "cancelled"))
+	func isLate(expectedArrivalTime: String) -> Bool {
+		guard let expectedTime = parseTime(expectedArrivalTime) else { return false }
+		let actualTime = getTimeComponents(from: arrival)
+		return actualTime > expectedTime
 	}
 	
-	// Méthodes utilitaires
-	mutating func clockOut() {
-		self.departure = Date()
-		self.hoursWorked = calculatedHours
-		self.status = "completed"
-		self.updatedAt = Date()
+	func lateMinutes(expectedArrivalTime: String) -> Int {
+		guard let expectedTime = parseTime(expectedArrivalTime) else { return 0 }
+		let actualTime = getTimeComponents(from: arrival)
+		let diff = actualTime - expectedTime
+		return max(0, diff)
 	}
 	
-	mutating func cancel() {
-		self.status = "cancelled"
-		self.updatedAt = Date()
+	private func parseTime(_ timeString: String) -> Int? {
+		let components = timeString.split(separator: ":").compactMap { Int($0) }
+		guard components.count == 2 else { return nil }
+		return components[0] * 60 + components[1]
 	}
 	
-	// Initializer pour pointer l'arrivée
-	init(userId: String, notes: String? = nil) {
-		self.id = nil
-		self.userId = userId
+	private func getTimeComponents(from date: Date) -> Int {
+		let calendar = Calendar.current
+		let hour = calendar.component(.hour, from: date)
+		let minute = calendar.component(.minute, from: date)
+		return hour * 60 + minute
+	}
+	
+
+
+	init() {}
+	
+	init(id: UUID? = nil, userId: UUID, notes: String? = nil) {
+		self.id = id
+		self.$user.id = userId
 		self.arrival = Date()
 		self.departure = nil
 		self.hoursWorked = nil
 		self.status = "active"
 		self.notes = notes
-		self.createdAt = Date()
-		self.updatedAt = Date()
+	}
+	
+	func clockOut() {
+		self.departure = Date()
+		self.hoursWorked = calculatedHours
+		self.status = "completed"
+	}
+	
+	func cancel() {
+		self.status = "cancelled"
+	}
+}
+
+extension TimeEntry: Validatable {
+	static func validations(_ validations: inout Validations) {
+		validations.add("status", as: String.self, is: .in("active", "completed", "cancelled"))
 	}
 }

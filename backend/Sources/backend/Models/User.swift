@@ -1,23 +1,61 @@
 import Vapor
+import Fluent
 import Foundation
 
-struct User: Codable, Validatable {
-	var id: String?
-	var firstName: String
-	var lastName: String
-	var email: String
-	var passwordHash: String 
-	var phone: String
-	var role: String // "admin", "manager", "employee"
-	var department: String?
-	var position: String?
-	var hireDate: Date?
-	var createdAt: Date
-	var updatedAt: Date
-	var isActive: Bool
-	var weeklyHoursTarget: Double // Objectif d'heures par semaine
+final class User: Model, Content, Authenticatable, @unchecked Sendable {
+	static let schema = "users"
 	
-	// Propriétés calculées
+	@ID(key: .id)
+	var id: UUID?
+	
+	@Field(key: "first_name")
+	var firstName: String
+	
+	@Field(key: "last_name")
+	var lastName: String
+	
+	@Field(key: "email")
+	var email: String
+	
+	@Field(key: "password_hash")
+	var passwordHash: String
+	
+	@Field(key: "phone")
+	var phone: String
+	
+	@Field(key: "role")
+	var role: String 
+	
+	@OptionalField(key: "department")
+	var department: String?
+	
+	@OptionalField(key: "position")
+	var position: String?
+	
+	@OptionalField(key: "hire_date")
+	var hireDate: Date?
+	
+	@Timestamp(key: "created_at", on: .create)
+	var createdAt: Date?
+	
+	@Timestamp(key: "updated_at", on: .update)
+	var updatedAt: Date?
+	
+	@Field(key: "is_active")
+	var isActive: Bool
+	
+	@Field(key: "weekly_hours_target")
+	var weeklyHoursTarget: Double 
+	
+	@Field(key: "expected_arrival_time")
+	var expectedArrivalTime: String
+	
+	@Children(for: \.$user)
+	var timeEntries: [TimeEntry]
+	
+	@Children(for: \.$user)
+	var performances: [Performance]
+	
 	var fullName: String {
 		return "\(firstName) \(lastName)"
 	}
@@ -29,12 +67,9 @@ struct User: Codable, Validatable {
 	}
 	
 	var isManager: Bool {
-		return role == "manager" || role == "admin"
+		return role == "manager"
 	}
 	
-	var isAdmin: Bool {
-		return role == "admin"
-	}
 	
 	var yearsOfService: Int? {
 		guard let hireDate = hireDate else { return nil }
@@ -43,8 +78,6 @@ struct User: Codable, Validatable {
 	
 	var displayRole: String {
 		switch role {
-		case "admin":
-			return "Administrateur"
 		case "manager":
 			return "Manager"
 		case "employee":
@@ -54,19 +87,12 @@ struct User: Codable, Validatable {
 		}
 	}
 	
-	// Validation
-	static func validations(_ validations: inout Validations) {
-		validations.add("firstName", as: String.self, is: !.empty && .count(2...50))
-		validations.add("lastName", as: String.self, is: !.empty && .count(2...50))
-		validations.add("email", as: String.self, is: .email && .valid(EmailDomainValidator()))
-		validations.add("phone", as: String.self, is: .count(10...15) && .characterSet(.decimalDigits.union(.init(charactersIn: "+- ()"))))
-		validations.add("role", as: String.self, is: .in("admin", "manager", "employee"))
-		validations.add("weeklyHoursTarget", as: Double.self, is: .range(1...80))
-	}
 	
-	// Initializer
-	init(firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0) {
-		self.id = nil
+	
+	init() {}
+	
+	init(id: UUID? = nil, firstName: String, lastName: String, email: String, passwordHash: String, phone: String, role: String = "employee", department: String? = nil, position: String? = nil, weeklyHoursTarget: Double = 35.0, expectedArrivalTime: String = "09:00") {
+		self.id = id
 		self.firstName = firstName
 		self.lastName = lastName
 		self.email = email
@@ -76,74 +102,54 @@ struct User: Codable, Validatable {
 		self.department = department
 		self.position = position
 		self.hireDate = Date()
-		self.createdAt = Date()
-		self.updatedAt = Date()
 		self.isActive = true
 		self.weeklyHoursTarget = weeklyHoursTarget
+		self.expectedArrivalTime = expectedArrivalTime
 	}
 }
 
-// Fonction qui contient un tableau des domaines bloqués	
+extension User: Validatable {
+	static func validations(_ validations: inout Validations) {
+		validations.add("firstName", as: String.self, is: !.empty && .count(2...50))
+		validations.add("lastName", as: String.self, is: !.empty && .count(2...50))
+		validations.add("email", as: String.self, is: .email)
+		validations.add("phone", as: String.self, is: .count(10...15))
+		validations.add("role", as: String.self, is: .in("manager", "employee"))
+		validations.add("weeklyHoursTarget", as: Double.self, is: .range(1...80))
+	}
+}
 
-struct EmailDomainValidator: Validator {
-	private let blockedDomains = [
-		"mailpit.local",
-		"mailtrap.io",
-		"ethereal.email",
-		"temp-mail.org",
-		"guerrillamail.com",
-		"10minutemail.com",
-		"throwaway.email",
-		"tempmail.com",
-		"yopmail.com",
-		"mailinator.com",
-		"trashmail.com",
-		"fakeinbox.com",
-		"dispostable.com",
-		"getnada.com",
-		"sharklasers.com",
-		"guerrillamailblock.com",
-		"spam4.me",
-		"grr.la",
-		"example.com",
-		"test.com",
-	]
+struct UserDTO: Content {
+	let id: UUID
+	let firstName: String
+	let lastName: String
+	let email: String
+	let phone: String
+	let role: String
+	let department: String?
+	let position: String?
+	let hireDate: Date?
+	let isActive: Bool
+	let weeklyHoursTarget: Double
+	let fullName: String
+	let displayRole: String
 	
-	private let suspiciousPatterns = [
-		"temp",
-		"fake",
-		"trash",
-		"spam",
-		"disposable",
-		"throwaway",
-		"test123"
-	]
-	
-	var validatorReadable: String {
-		"un domaine d'email valide (les emails temporaires ne sont pas autorisés)"
-	}
-	
-	func validate(_ value: String) -> ValidatorResult {
-		let lowercasedEmail = value.lowercased()
-		
-		guard let domain = extractDomain(from: lowercasedEmail) else {
-			return .invalid(reason: "Format d'email invalide")
+	init(from user: User) throws {
+		guard let id = user.id else {
+			throw Abort(.internalServerError, reason: "User ID is missing")
 		}
-		
-		if blockedDomains.contains(where: { domain.contains($0) }) {
-			return .invalid(reason: "Ce domaine d'email n'est pas autorisé. Veuillez utiliser une adresse email professionnelle ou personnelle valide.")
-		}
-		
-		if suspiciousPatterns.contains(where: { lowercasedEmail.contains($0) }) {
-			return .invalid(reason: "Cette adresse email semble suspecte. Veuillez utiliser une adresse email valide.")
-		}
-		
-		return .valid
-	}
-	
-	private func extractDomain(from email: String) -> String? {
-		let components = email.split(separator: "@")
-		guard components.count == 2 else { return nil }
-		return String(components[1])
+		self.id = id
+		self.firstName = user.firstName
+		self.lastName = user.lastName
+		self.email = user.email
+		self.phone = user.phone
+		self.role = user.role
+		self.department = user.department
+		self.position = user.position
+		self.hireDate = user.hireDate
+		self.isActive = user.isActive
+		self.weeklyHoursTarget = user.weeklyHoursTarget
+		self.fullName = user.fullName
+		self.displayRole = user.displayRole
 	}
 }

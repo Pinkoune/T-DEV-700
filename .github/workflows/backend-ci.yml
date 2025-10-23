@@ -17,7 +17,7 @@ env:
 jobs:
   build:
     name: Build Backend
-    runs-on: [self-hosted, ubuntu] 
+    runs-on: self-hosted
     
     steps:
       - name: Checkout code
@@ -51,17 +51,23 @@ jobs:
 
   test:
     name: Test Backend
-    runs-on: [self-hosted, ubuntu] 
+    runs-on: self-hosted
     needs: build
     
     services:
-      firebase:
-        image: andreysenov/firebase-tools:latest
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vapor
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: vapor_test
         ports:
-          - 4000:4000
-          - 9099:9099
-          - 8080:8080
-          - 9199:9199
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
       - name: Checkout code
@@ -79,22 +85,17 @@ jobs:
           key: ${{ runner.os }}-spm-${{ hashFiles('backend/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
-      
-      - name: Setup Firebase config
-        working-directory: backend/firebase
-        run: |
-          echo "Checking Firebase configuration..."
-          ls -la
-          cat firebase.json || echo "firebase.json not found"
-      
+
       - name: Run Tests
         working-directory: backend
         env:
-          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
-          FIRESTORE_EMULATOR_HOST: localhost:8080
-          FIREBASE_STORAGE_EMULATOR_HOST: localhost:9199
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USERNAME: vapor
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: vapor_test
         run: |
-          echo "Running backend tests with Firebase Emulator..."
+          echo "Running backend tests with PostgreSQL..."
           swift test --enable-code-coverage
           echo "All tests passed"
       

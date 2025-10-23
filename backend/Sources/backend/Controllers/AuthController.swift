@@ -1,15 +1,16 @@
 import Vapor
-import FirebaseFirestore
-import FirebaseFirestoreSwift
+import Fluent
+import JWT
 
 struct AuthController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
-        let auth = routes.grouped("api", "auth")
-        
+        let auth = routes.grouped("auth")
+
         auth.post("login", use: login)
+        auth.post("register", use: register)
     }
     
-    /// POST /api/auth/login - Connexion d'un utilisateur
+    /// POST /auth/login - Connexion d'un utilisateur
     func login(req: Request) async throws -> LoginResponse {
         let loginData = try req.content.decode(LoginRequest.self)
         
@@ -21,45 +22,87 @@ struct AuthController: RouteCollection {
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
         
-        let firestore = req.application.firestore
-        
-        do {
-            let snapshot = try await firestore.collection("users")
-                .whereField("email", isEqualTo: loginData.email)
-                .whereField("isActive", isEqualTo: true)
-                .limit(to: 1)
-                .getDocuments()
-            
-            guard let document = snapshot.documents.first else {
-                throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
-            }
-            
-            guard var user = try? document.data(as: User.self) else {
-                throw Abort(.internalServerError, reason: "Erreur lors du décodage de l'utilisateur")
-            }
-            
-            user.id = document.documentID
-            
-            let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
-            
-            guard isPasswordValid else {
-                throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
-            }
-            
-            // Token à revoir plus tard avec JWT
-            let token = UUID().uuidString
-            
-            return LoginResponse(
-                success: true,
-                message: "Connexion réussie",
-                token: token,
-                user: UserResponse(from: user)
-            )
-        } catch let error as Abort {
-            throw error
-        } catch {
-            throw Abort(.internalServerError, reason: "Erreur lors de la connexion: \(error.localizedDescription)")
+        guard let user = try await User.query(on: req.db)
+            .filter(\.$email == loginData.email.lowercased())
+            .filter(\.$isActive == true)
+            .first()
+        else {
+            throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
+
+        let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
+
+        if !isPasswordValid {
+            throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
+        }
+
+        let payload = UserJWTPayload(
+            userId: user.id!.uuidString,
+            email: user.email,
+            role: user.role,
+            exp: .init(value: Date().addingTimeInterval(86400))
+        )
+
+        let token = try req.jwt.sign(payload)
+
+        return LoginResponse(
+            success: true,
+            message: "Connexion réussie",
+            token: token,
+            user: LoginUserResponse(from: user)
+        )
+    }
+
+    /// POST /auth/register - Inscription d'un nouvel utilisateur
+    func register(req: Request) async throws -> LoginResponse {
+        let registerData = try req.content.decode(RegisterRequest.self)
+
+        guard isValidEmailDomain(registerData.email) else {
+            throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé")
+        }
+
+        guard isValidPassword(registerData.password) else {
+            throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
+        }
+
+        let existingUser = try await User.query(on: req.db)
+            .filter(\.$email == registerData.email.lowercased())
+            .first()
+
+        if existingUser != nil {
+            throw Abort(.conflict, reason: "Cet email est déjà utilisé")
+        }
+
+        let passwordHash = try req.password.hash(registerData.password)
+
+        let user = User(
+            firstName: registerData.firstName,
+            lastName: registerData.lastName,
+            email: registerData.email.lowercased(),
+            passwordHash: passwordHash,
+            phone: registerData.phone,
+            role: "employee",
+            department: registerData.department,
+            position: registerData.position
+        )
+
+        try await user.save(on: req.db)
+
+        let payload = UserJWTPayload(
+            userId: user.id!.uuidString,
+            email: user.email,
+            role: user.role,
+            exp: .init(value: Date().addingTimeInterval(86400))
+        )
+
+        let token = try req.jwt.sign(payload)
+
+        return LoginResponse(
+            success: true,
+            message: "Inscription réussie",
+            token: token,
+            user: LoginUserResponse(from: user)
+        )
     }
     
     private func isValidPassword(_ password: String) -> Bool {
@@ -107,7 +150,7 @@ struct AuthController: RouteCollection {
         
         let domain = String(components[1])
         
-        // Permet de vérifier si le domaine est bloqué ou non  
+        // Permet de vérifier si le domaine est bloqué ou non
         return !blockedDomains.contains(where: { domain.contains($0) })
     }
 }
@@ -117,14 +160,24 @@ struct LoginRequest: Content {
     let password: String
 }
 
+struct RegisterRequest: Content {
+    let firstName: String
+    let lastName: String
+    let email: String
+    let password: String
+    let phone: String
+    let department: String?
+    let position: String?
+}
+
 struct LoginResponse: Content {
     let success: Bool
     let message: String
     let token: String
-    let user: UserResponse
+    let user: LoginUserResponse
 }
 
-struct UserResponse: Content {
+struct LoginUserResponse: Content {
     let id: String?
     let firstName: String
     let lastName: String
@@ -135,7 +188,7 @@ struct UserResponse: Content {
     let position: String?
     
     init(from user: User) {
-        self.id = user.id
+        self.id = user.id?.uuidString
         self.firstName = user.firstName
         self.lastName = user.lastName
         self.fullName = user.fullName

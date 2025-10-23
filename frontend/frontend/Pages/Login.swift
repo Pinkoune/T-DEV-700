@@ -15,7 +15,7 @@ struct Login: View {
     @State private var showForgotPassword = false
     @State private var showEmployeePage = false
     @State private var showManagerPage = false
-    
+
     var body: some View {
         ZStack {
             Color(Color.mainGreen)
@@ -97,7 +97,7 @@ struct Login: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                
+
                 Button(action: {
                     showForgotPassword = true
                 }) {
