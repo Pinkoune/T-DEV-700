@@ -80,7 +80,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && rm -r /var/lib/apt/lists/*
 
 # Create a vapor user and group with /app as its home directory
-RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app --uid 1000 vapor
+RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app --uid 1001 vapor
 
 # Switch to the new home directory
 WORKDIR /app
