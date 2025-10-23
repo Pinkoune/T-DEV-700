@@ -35,7 +35,19 @@ RUN --mount=type=cache,target=/build/.build \
     cp "$(swift build -c release --show-bin-path)/backend" /staging && \
     # Copy resources bundled by SPM to staging area
     find -L "$(swift build -c release --show-bin-path)" -regex '.*\.resources$' -exec cp -Ra {} /staging \;
+# Étape de scan de sécurité
+FROM build AS security-scan
+RUN apt-get update && apt-get install -y curl
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+RUN trivy filesystem --exit-code 1 --no-progress /staging
 
+# Étape finale optimisée
+FROM ubuntu:noble AS final
+# ... configuration existante
+
+# Ajouter healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
 
 # Switch to the staging area
 WORKDIR /staging
@@ -68,7 +80,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && rm -r /var/lib/apt/lists/*
 
 # Create a vapor user and group with /app as its home directory
-RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
+RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app --uid 1000 vapor
 
 # Switch to the new home directory
 WORKDIR /app

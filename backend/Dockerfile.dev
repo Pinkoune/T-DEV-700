@@ -9,6 +9,15 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
 # Set working directory
 WORKDIR /app
 
+# Créer un utilisateur non-privilégié
+RUN groupadd -r vapor && useradd -r -g vapor -m -d /home/vapor vapor
+
+# Changer le propriétaire du répertoire de travail
+RUN chown -R vapor:vapor /app
+
+# Basculer vers l'utilisateur non-privilégié
+USER vapor:vapor
+
 # Copy package files
 COPY ./Package.* ./
 

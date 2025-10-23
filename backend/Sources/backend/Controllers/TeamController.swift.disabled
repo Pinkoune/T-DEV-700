@@ -4,18 +4,18 @@ import Fluent
 struct TeamController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let teams = routes.grouped("teams")
-        
+
         let protected = teams.grouped(JWTAuthMiddleware())
         
         protected.get(use: getAllTeams)
         protected.get("search", use: searchTeams)
         protected.get("active", use: getActiveTeams)
-        
-        // Routes accessibles par les managers uniquement 
+
+        // Routes accessibles par les managers uniquement
         let manager = protected.grouped(ManagerMiddleware())
         manager.post(use: createTeam)
         manager.get("by-manager", ":managerID", use: getTeamsByManager)
-        
+
         manager.group(":teamID") { team in
             team.get(use: getTeam)
             team.put(use: updateTeam)
@@ -24,12 +24,12 @@ struct TeamController: RouteCollection {
             team.get("members", use: getTeamMembers)
             team.post("members", ":userID", use: addMember)
             team.delete("members", ":userID", use: removeMember)
-            
+
             team.get("stats", use: getTeamStats)
             team.get("performance", use: getTeamPerformance)
         }
     }
-    
+
     
     /// GET /teams - Récupère toutes les équipes
     func getAllTeams(req: Request) async throws -> [TeamResponse] {
@@ -38,27 +38,27 @@ struct TeamController: RouteCollection {
         
         return teams.map { TeamResponse(from: $0) }
     }
-    
+
     /// GET /teams/:teamID - Récupère une équipe spécifique avec détails
     func getTeam(req: Request) async throws -> TeamDetailResponse {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
         }
-        
+
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         var memberDetails: [UserResponse] = []
         for memberID in team.members {
             if let user = try await User.find(memberID, on: req.db) {
                 memberDetails.append(UserResponse(from: user))
             }
         }
-        
-        // Pareil que pour les membres sauf qu'ici on récupère les détails concernant le manager de l'équipe. 
+
+        // Pareil que pour les membres sauf qu'ici on récupère les détails concernant le manager de l'équipe.
         let manager = try await User.find(team.managerId, on: req.db)
-        
+
         return TeamDetailResponse(
             team: TeamResponse(from: team),
             members: memberDetails,
@@ -74,15 +74,15 @@ struct TeamController: RouteCollection {
         guard let _ = try await User.find(teamData.managerId, on: req.db) else {
             throw Abort(.badRequest, reason: "Manager non trouvé")
         }
-        
+
         let existingTeam = try await Team.query(on: req.db)
             .filter(\.$name == teamData.name)
             .first()
-        
+
         if existingTeam != nil {
             throw Abort(.conflict, reason: "Une équipe avec ce nom existe déjà")
         }
-        
+
         let team = Team(
             name: teamData.name,
             description: teamData.description,
@@ -125,9 +125,9 @@ struct TeamController: RouteCollection {
         if let isActive = updateData.isActive {
             team.isActive = isActive
         }
-        
+
         try await team.save(on: req.db)
-        
+
         return TeamResponse(from: team)
     }
     
@@ -140,16 +140,16 @@ struct TeamController: RouteCollection {
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         // Soft delete : marquer comme inactive
         team.isActive = false
         try await team.save(on: req.db)
-        
+
         return .noContent
     }
+
     
-    
-    /// POST /teams/:teamID/members/:userID - Ajoute un membre à l'équipe 
+    /// POST /teams/:teamID/members/:userID - Ajoute un membre à l'équipe
     func addMember(req: Request) async throws -> HTTPStatus {
         guard let teamID = req.parameters.get("teamID", as: UUID.self),
               let userID = req.parameters.get("userID", as: UUID.self) else {
@@ -159,22 +159,22 @@ struct TeamController: RouteCollection {
         guard let _ = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
+
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         if team.isMember(userID) {
             throw Abort(.conflict, reason: "L'utilisateur est déjà membre de cette équipe")
         }
-        
+
         team.members.append(userID)
         try await team.save(on: req.db)
-        
+
         return .created
     }
     
-    /// DELETE /teams/:teamID/members/:userID - Suppression d'un membre de l'équipe 
+    /// DELETE /teams/:teamID/members/:userID - Suppression d'un membre de l'équipe
     func removeMember(req: Request) async throws -> HTTPStatus {
         guard let teamID = req.parameters.get("teamID", as: UUID.self),
               let userID = req.parameters.get("userID", as: UUID.self) else {
@@ -184,18 +184,18 @@ struct TeamController: RouteCollection {
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         if !team.isMember(userID) {
             throw Abort(.notFound, reason: "L'utilisateur n'est pas membre de cette équipe")
         }
-        
+
         if team.isManager(userID) {
             throw Abort(.badRequest, reason: "Impossible de retirer le manager de l'équipe")
         }
-        
+
         team.members.removeAll { $0 == userID }
         try await team.save(on: req.db)
-        
+
         return .noContent
     }
     
@@ -208,18 +208,18 @@ struct TeamController: RouteCollection {
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         var members: [UserResponse] = []
         for memberID in team.members {
             if let user = try await User.find(memberID, on: req.db) {
                 members.append(UserResponse(from: user))
             }
         }
-        
+
         return members
     }
-        
-    /// GET /teams/:teamID/stats - Statistiques de l'équipe en fonction de la période et des performances. 
+
+    /// GET /teams/:teamID/stats - Statistiques de l'équipe en fonction de la période et des performances.
     func getTeamStats(req: Request) async throws -> TeamStatsResponse {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -228,7 +228,7 @@ struct TeamController: RouteCollection {
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         // Compter les entrées de temps actives
         var activeTimeEntries = 0
         for memberID in team.members {
@@ -238,11 +238,11 @@ struct TeamController: RouteCollection {
                 .count()
             activeTimeEntries += count
         }
-        
+
         // Calculer la performance moyenne de l'équipe
         var totalPerformance = 0.0
         var performanceCount = 0
-        
+
         for memberID in team.members {
             if let latestPerformance = try await Performance.query(on: req.db)
                 .filter(\.$user.$id == memberID)
@@ -252,18 +252,18 @@ struct TeamController: RouteCollection {
                 performanceCount += 1
             }
         }
-        
+
         let averagePerformance = performanceCount > 0 ? totalPerformance / Double(performanceCount) : 0.0
-        
+
         // Calculer le lateness rate de l'équipe (ce mois)
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
-        
+
         var totalEntries = 0
         var totalLateEntries = 0
         var totalLateMinutes = 0
-        
+
         for memberID in team.members {
             guard let user = try await User.find(memberID, on: req.db) else { continue }
             
@@ -272,9 +272,9 @@ struct TeamController: RouteCollection {
                 .filter(\.$createdAt >= startOfMonth)
                 .filter(\.$status == "completed")
                 .all()
-            
+
             totalEntries += entries.count
-            
+
             for entry in entries {
                 if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
                     totalLateEntries += 1
@@ -282,10 +282,10 @@ struct TeamController: RouteCollection {
                 }
             }
         }
-        
+
         let latenessRate = totalEntries > 0 ? (Double(totalLateEntries) / Double(totalEntries)) * 100 : 0.0
         let averageLateMinutes = totalLateEntries > 0 ? Double(totalLateMinutes) / Double(totalLateEntries) : 0.0
-        
+
         return TeamStatsResponse(
             teamId: teamID.uuidString,
             totalMembers: team.memberCount,
@@ -308,21 +308,21 @@ struct TeamController: RouteCollection {
         guard let team = try await Team.find(teamID, on: req.db) else {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
-        
+
         var memberPerformances: [TeamMemberPerformance] = []
-        
+
         for memberID in team.members {
             // Récupérer l'utilisateur
             guard let user = try await User.find(memberID, on: req.db) else {
                 continue
             }
-            
+
             // Récupérer la performance la plus récente
             let latestPerformance = try await Performance.query(on: req.db)
                 .filter(\.$user.$id == memberID)
                 .sort(\.$createdAt, .descending)
                 .first()
-            
+
             memberPerformances.append(TeamMemberPerformance(
                 userId: memberID.uuidString,
                 userName: user.fullName,
@@ -331,7 +331,7 @@ struct TeamController: RouteCollection {
                 performanceLevel: latestPerformance?.performanceLevel ?? "Non évalué"
             ))
         }
-        
+
         return memberPerformances
     }
     
@@ -351,7 +351,7 @@ struct TeamController: RouteCollection {
                 group.filter(\.$description, .custom("ILIKE"), searchPattern)
             }
             .all()
-        
+
         return teams.map { TeamResponse(from: $0) }
     }
     

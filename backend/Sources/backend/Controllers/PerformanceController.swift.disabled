@@ -15,7 +15,7 @@ struct PerformanceController: RouteCollection {
         performances.get("by-user", ":userID", use: getPerformancesByUser)
         performances.get("latest", ":userID", use: getLatestPerformance)
     }
-        
+
     /// GET /performances - Récupère toutes les performances
     func getAllPerformances(req: Request) async throws -> [PerformanceResponse] {
         let limit = req.query[Int.self, at: "limit"] ?? 50
@@ -25,16 +25,16 @@ struct PerformanceController: RouteCollection {
             .sort(\.$createdAt, .descending)
             .limit(limit)
             .all()
-        
+
         return performances.map { PerformanceResponse(from: $0) }
     }
-    
+
     /// GET /performances/:performanceID - Récupère une performance par ID
     func getPerformance(req: Request) async throws -> PerformanceResponse {
         guard let performanceID = req.parameters.get("performanceID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID de performance invalide")
         }
-        
+
         guard let performance = try await Performance.query(on: req.db)
             .filter(\.$id == performanceID)
             .with(\.$user)
@@ -42,7 +42,7 @@ struct PerformanceController: RouteCollection {
         else {
             throw Abort(.notFound, reason: "Performance non trouvée")
         }
-        
+
         return PerformanceResponse(from: performance)
     }
     
@@ -55,18 +55,18 @@ struct PerformanceController: RouteCollection {
         guard let _ = try await User.find(performanceData.userId, on: req.db) else {
             throw Abort(.badRequest, reason: "Utilisateur non trouvé")
         }
-        
+
         // Vérification de l'existence d'une performance pour cette période
         let existingPerformance = try await Performance.query(on: req.db)
             .filter(\.$user.$id == performanceData.userId)
             .filter(\.$period == performanceData.period)
             .first()
-        
+
         if existingPerformance != nil {
             throw Abort(.conflict, reason: "Une performance existe déjà pour cette période")
         }
-        
-        // Mise en place et création de la nouvelle performance. 
+
+        // Mise en place et création de la nouvelle performance.
         let performance = Performance(
             userId: performanceData.userId,
             period: performanceData.period,
@@ -88,19 +88,19 @@ struct PerformanceController: RouteCollection {
         guard let performance = try await Performance.find(performanceID, on: req.db) else {
             throw Abort(.notFound, reason: "Performance non trouvée")
         }
-        
+
         let updateData = try req.content.decode(UpdatePerformanceRequest.self)
-        
+
         if let period = updateData.period {
             performance.period = period
         }
         if let index = updateData.index {
             performance.index = index
         }
-        
+
         try await performance.save(on: req.db)
         try await performance.$user.load(on: req.db)
-        
+
         return PerformanceResponse(from: performance)
     }
     
@@ -113,11 +113,11 @@ struct PerformanceController: RouteCollection {
         guard let performance = try await Performance.find(performanceID, on: req.db) else {
             throw Abort(.notFound, reason: "Performance non trouvée")
         }
-        
+
         try await performance.delete(on: req.db)
         return .noContent
     }
-    
+
     
     /// GET /performances/by-user/:userID - Récupèration de toutes les performances d'un utilisateur spécifique.
     func getPerformancesByUser(req: Request) async throws -> [PerformanceResponse] {
@@ -128,17 +128,17 @@ struct PerformanceController: RouteCollection {
         guard let _ = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
+
         let performances = try await Performance.query(on: req.db)
             .filter(\.$user.$id == userID)
             .with(\.$user)
             .sort(\.$createdAt, .descending)
             .all()
-        
+
         return performances.map { PerformanceResponse(from: $0) }
     }
     
-    /// GET /performances/latest/:userID - Récupèraion de la dernière performance d'un utilisateur spécifique à l'aide d'un filtre. 
+    /// GET /performances/latest/:userID - Récupèraion de la dernière performance d'un utilisateur spécifique à l'aide d'un filtre.
     func getLatestPerformance(req: Request) async throws -> PerformanceResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -152,7 +152,7 @@ struct PerformanceController: RouteCollection {
         else {
             throw Abort(.notFound, reason: "Aucune performance trouvée pour cet utilisateur")
         }
-        
+
         return PerformanceResponse(from: performance)
     }
 }
@@ -183,7 +183,7 @@ struct PerformanceResponse: Content {
     let isExcellent: Bool
     let createdAt: Date?
     let updatedAt: Date?
-    
+
     init(from performance: Performance) {
         self.id = performance.id
         self.userId = performance.$user.id

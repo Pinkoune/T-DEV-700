@@ -46,7 +46,7 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      # Router principal pour /api 
+      # Router principal pour /api
       - "traefik.http.routers.backend-api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.backend-api.entrypoints=web"
       - "traefik.http.routers.backend-api.service=backend"

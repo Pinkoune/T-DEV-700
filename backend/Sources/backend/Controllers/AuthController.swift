@@ -5,7 +5,7 @@ import JWT
 struct AuthController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let auth = routes.grouped("auth")
-        
+
         auth.post("login", use: login)
         auth.post("register", use: register)
     }
@@ -29,22 +29,22 @@ struct AuthController: RouteCollection {
         else {
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
-        
+
         let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
-        
+
         if !isPasswordValid {
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
-        
+
         let payload = UserJWTPayload(
             userId: user.id!.uuidString,
             email: user.email,
             role: user.role,
             exp: .init(value: Date().addingTimeInterval(86400))
         )
-        
+
         let token = try req.jwt.sign(payload)
-        
+
         return LoginResponse(
             success: true,
             message: "Connexion réussie",
@@ -52,29 +52,29 @@ struct AuthController: RouteCollection {
             user: LoginUserResponse(from: user)
         )
     }
-    
+
     /// POST /auth/register - Inscription d'un nouvel utilisateur
     func register(req: Request) async throws -> LoginResponse {
         let registerData = try req.content.decode(RegisterRequest.self)
-        
+
         guard isValidEmailDomain(registerData.email) else {
             throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé")
         }
-        
+
         guard isValidPassword(registerData.password) else {
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
-        
+
         let existingUser = try await User.query(on: req.db)
             .filter(\.$email == registerData.email.lowercased())
             .first()
-        
+
         if existingUser != nil {
             throw Abort(.conflict, reason: "Cet email est déjà utilisé")
         }
-        
+
         let passwordHash = try req.password.hash(registerData.password)
-        
+
         let user = User(
             firstName: registerData.firstName,
             lastName: registerData.lastName,
@@ -85,18 +85,18 @@ struct AuthController: RouteCollection {
             department: registerData.department,
             position: registerData.position
         )
-        
+
         try await user.save(on: req.db)
-        
+
         let payload = UserJWTPayload(
             userId: user.id!.uuidString,
             email: user.email,
             role: user.role,
             exp: .init(value: Date().addingTimeInterval(86400))
         )
-        
+
         let token = try req.jwt.sign(payload)
-        
+
         return LoginResponse(
             success: true,
             message: "Inscription réussie",
@@ -150,6 +150,7 @@ struct AuthController: RouteCollection {
         
         let domain = String(components[1])
         
+        // Permet de vérifier si le domaine est bloqué ou non
         return !blockedDomains.contains(where: { domain.contains($0) })
     }
 }

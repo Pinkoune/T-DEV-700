@@ -8,7 +8,7 @@ public func configure(_ app: Application) async throws {
     // Configuration JWT
     let jwtSecret = Environment.get("JWT_SECRET") ?? "secret-key-change-in-production"
     app.jwt.signers.use(.hs256(key: [UInt8](jwtSecret.utf8)))
-    
+
     // Configuration PostgreSQL
     let hostname = Environment.get("DATABASE_HOST") ?? "localhost"
     let port = Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5432
@@ -26,7 +26,7 @@ public func configure(_ app: Application) async throws {
         ),
         as: .psql
     )
-    
+
     // Migrations
     app.migrations.add(CreateUser())
     app.migrations.add(CreateTeam())
@@ -39,7 +39,7 @@ public func configure(_ app: Application) async throws {
     if app.environment == .development {
         try await app.autoMigrate()
     }
-    
+
     try routes(app)
     
     app.logger.info("PostgreSQL database configured")

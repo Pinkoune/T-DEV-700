@@ -14,7 +14,8 @@ struct Login: View {
     @State private var isLoading = false
     @State private var showForgotPassword = false
     @State private var showEmployeePage = false
-    
+    @State private var showManagerPage = false
+
     var body: some View {
         ZStack {
             Color(Color.mainGreen)
@@ -88,6 +89,16 @@ struct Login: View {
                 }
                 
                 Button(action: {
+                    showManagerPage = true
+                }) {
+                    Text("Manager home")
+                        .padding()
+                        .background(Color.mainYellow)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+
+                Button(action: {
                     showForgotPassword = true
                 }) {
                     Text("Mot de passe oublié ?")
@@ -102,7 +113,12 @@ struct Login: View {
         .sheet(isPresented: $showForgotPassword) {
             ForgotPassword()
         }
-       
+        .fullScreenCover(isPresented: $showEmployeePage) {
+            EmployeeView()
+        }
+        .fullScreenCover(isPresented: $showManagerPage) {
+            ManagerView()
+        }
     }
     
     func handleLogin() {
