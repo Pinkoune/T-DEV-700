@@ -9,14 +9,6 @@ on:
       - 'frontend/Dockerfile.mobile'
       - 'traefik/**'
       - '.github/workflows/docker-ci.yml'
-  push:
-    branches: [ main, dev ]
-    paths:
-      - 'docker-compose.yml'
-      - 'backend/Dockerfile'
-      - 'frontend/Dockerfile.mobile'
-      - 'traefik/**'
-      - '.github/workflows/docker-ci.yml'
 
 jobs:
   validate:

@@ -1,16 +1,11 @@
 name: Backend CI
 
 on:
-  push:
-    branches: [ main, dev ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [ main, dev ]
     paths:
       - 'backend/**'
-
+      - '.github/workflows/backend-ci.yml'
 env:
   SWIFT_VERSION: '6.1'
 
