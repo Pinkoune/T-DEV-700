@@ -8,6 +8,10 @@ struct AuthController: RouteCollection {
 
         auth.post("login", use: login)
         auth.post("register", use: register)
+        auth.post("refresh", use: refresh)
+        
+        let protected = auth.grouped(JWTAuthMiddleware())
+        protected.post("logout", use: logout)
     }
     
     /// POST /auth/login - Connexion d'un utilisateur
@@ -58,6 +62,68 @@ struct AuthController: RouteCollection {
             message: "Connexion réussie",
             token: token,
             user: LoginUserResponse(from: user)
+        )
+    }
+
+
+    /// POST /auth/refresh - Rafraîchissement du token
+    func refresh(req: Request) async throws -> LoginResponse {
+        let refreshData = try req.content.decode(RefreshRequest.self)
+        
+        req.logger.info("[AUTH] Tentative de rafraîchissement de token")
+        
+        let payload: UserJWTPayload
+        do {
+            payload = try req.jwt.verify(refreshData.token, as: UserJWTPayload.self)
+        } catch {
+            req.logger.warning("[AUTH] Token invalide ou expiré pour rafraîchissement")
+            throw Abort(.unauthorized, reason: "Token invalide ou expiré")
+        }
+        
+        guard let userId = UUID(uuidString: payload.userId) else {
+            req.logger.warning("[AUTH] User ID invalide dans le token")
+            throw Abort(.unauthorized, reason: "Token invalide")
+        }
+        
+        guard let user = try await User.find(userId, on: req.db) else {
+            req.logger.warning("[AUTH] Utilisateur introuvable pour rafraîchissement: \(payload.userId)")
+            throw Abort(.unauthorized, reason: "Utilisateur non trouvé")
+        }
+        
+        guard user.isActive else {
+            req.logger.warning("[AUTH] Compte inactif pour rafraîchissement: \(user.email)")
+            throw Abort(.unauthorized, reason: "Compte désactivé")
+        }
+        
+        let newPayload = UserJWTPayload(
+            userId: user.id!.uuidString,
+            email: user.email,
+            role: user.role,
+            exp: .init(value: Date().addingTimeInterval(86400))
+        )
+        
+        let newToken = try req.jwt.sign(newPayload)
+        
+        req.logger.info("[AUTH] Token rafraîchi avec succès - Email: \(user.email), ID: \(user.id?.uuidString ?? "N/A")")
+        
+        return LoginResponse(
+            success: true,
+            message: "Token rafraîchi avec succès",
+            token: newToken,
+            user: LoginUserResponse(from: user)
+        )
+    }
+    
+    /// POST /auth/logout - Déconnexion de l'utilisateur
+    func logout(req: Request) async throws -> LogoutResponse {
+        let user = try req.auth.require(User.self)
+        
+        req.logger.info("[AUTH] Déconnexion - Email: \(user.email), ID: \(user.id?.uuidString ?? "N/A")")
+        
+    
+        return LogoutResponse(
+            success: true,
+            message: "Déconnexion réussie"
         )
     }
 
@@ -190,6 +256,15 @@ struct LoginResponse: Content {
     let message: String
     let token: String
     let user: LoginUserResponse
+}
+
+struct RefreshRequest: Content {
+    let token: String
+}
+
+struct LogoutResponse: Content {
+    let success: Bool
+    let message: String
 }
 
 struct LoginUserResponse: Content {
