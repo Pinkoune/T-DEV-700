@@ -116,18 +116,20 @@ jobs:
           echo "📱 Final simulator state:"
           xcrun simctl list devices | grep -A 5 "iPhone 16"
 
-      - name: Run Tests
+      - name: Run Unit Tests Only
         working-directory: frontend
         timeout-minutes: 30
         run: |
-          echo "🧪 Running iOS tests..."
+          echo "🧪 Running iOS unit tests (excluding UI tests)..."
           
-          # Sur macOS, on utilise le timeout du workflow (timeout-minutes: 30)
-          # au lieu de la commande timeout qui n'existe pas
+          # On lance UNIQUEMENT les tests unitaires, pas les UI tests
+          # Les UI tests se bloquent sur GitHub Actions car ils nécessitent
+          # une interaction graphique complète
           xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -only-testing:frontendTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults \
             2>&1 | tee test_output.log
@@ -139,7 +141,8 @@ jobs:
             exit $TEST_RESULT
           fi
           
-          echo "✅ All tests passed"
+          echo "✅ All unit tests passed"
+          echo "ℹ️  UI tests are skipped on CI (use -only-testing:frontendTests)"
 
       - name: Shutdown simulator
         if: always()
