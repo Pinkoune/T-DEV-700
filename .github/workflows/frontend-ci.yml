@@ -16,14 +16,15 @@ jobs:
   build:
     name: Build iOS App
     runs-on: macos-latest
-    
+    timeout-minutes: 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Show Xcode version
         run: xcodebuild -version
-      
+
       - name: Cache derived data
         uses: actions/cache@v4
         with:
@@ -31,21 +32,23 @@ jobs:
           key: ${{ runner.os }}-xcode-${{ hashFiles('frontend/frontend.xcodeproj/**') }}
           restore-keys: |
             ${{ runner.os }}-xcode-
-      
+
       - name: List available simulators
-        run: xcrun simctl list devices
-      
+        run: |
+          echo "📱 Available simulators:"
+          xcrun simctl list devices available
+
       - name: Build iOS App
         working-directory: frontend
         run: |
-          echo "Building iOS app..."
+          echo "🔨 Building iOS app..."
           xcodebuild -project frontend.xcodeproj \
             -scheme frontend \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -configuration Debug \
-            build
+            clean build
           echo "✅ iOS build successful"
-      
+
       - name: Archive build logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,42 +60,111 @@ jobs:
     name: Test iOS App
     runs-on: macos-latest
     needs: build
-    
+    timeout-minutes: 20
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Show Xcode version
         run: xcodebuild -version
-      
-      - name: Run Tests
-        working-directory: frontend
+
+      # Étape critique : préparer le simulateur AVANT les tests
+      - name: Prepare iOS Simulator
         run: |
-          echo "Running iOS tests..."
-          xcodebuild test \
+          echo "📱 Preparing simulator..."
+          
+          # Lister les simulateurs disponibles
+          xcrun simctl list devices available
+          
+          # Créer et booter le simulateur si nécessaire
+          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16" | head -1 | awk -F'[()]' '{print $2}')
+          
+          if [ -z "$DEVICE_ID" ]; then
+            echo "❌ iPhone 16 simulator not found"
+            echo "Available simulators:"
+            xcrun simctl list devices
+            exit 1
+          fi
+          
+          echo "Found device: $DEVICE_ID"
+          
+          # Booter le simulateur explicitement
+          xcrun simctl boot "$DEVICE_ID" || echo "Simulator already booted"
+          
+          # Attendre que le simulateur soit vraiment prêt
+          echo "⏳ Waiting for simulator to be ready..."
+          for i in {1..60}; do
+            if xcrun simctl bootstatus "$DEVICE_ID" -b; then
+              echo "✅ Simulator is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+          
+          # Vérifier l'état final
+          xcrun simctl list devices | grep -A 5 "iPhone 16"
+
+      - name: Run Tests with timeout protection
+        working-directory: frontend
+        timeout-minutes: 20  # Timeout spécifique pour cette étape
+        run: |
+          echo "🧪 Running iOS tests..."
+          
+          # Lancer les tests avec timeout Unix en plus
+          timeout 1800 xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -enableCodeCoverage YES
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults \
+            2>&1 | tee test_output.log
+          
+          TEST_RESULT=${PIPESTATUS[0]}
+          
+          if [ $TEST_RESULT -eq 124 ]; then
+            echo "❌ Tests timed out after 30 minutes"
+            exit 1
+          elif [ $TEST_RESULT -ne 0 ]; then
+            echo "❌ Tests failed with exit code: $TEST_RESULT"
+            exit $TEST_RESULT
+          fi
+          
           echo "✅ All tests passed"
-      
-      - name: Generate coverage
+
+      - name: Shutdown simulator
+        if: always()
         run: |
-          echo "Generating iOS coverage report..."
-          xcrun xccov view --report --json \
-            ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult > coverage.json || true
-      
+          echo "🛑 Shutting down simulator..."
+          xcrun simctl shutdown all || true
+
+      - name: Generate coverage
+        if: always()
+        run: |
+          echo "📊 Generating iOS coverage report..."
+          if [ -d ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult ]; then
+            xcrun xccov view --report --json \
+              ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult > coverage.json || true
+          else
+            echo "⚠️  No test results found for coverage"
+          fi
+
       - name: Upload coverage
+        if: always()
         uses: codecov/codecov-action@v4
         with:
           files: coverage.json
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-test-results
-          path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+            frontend/TestResults
+            frontend/test_output.log
