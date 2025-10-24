@@ -14,11 +14,15 @@ struct AuthController: RouteCollection {
     func login(req: Request) async throws -> LoginResponse {
         let loginData = try req.content.decode(LoginRequest.self)
         
+        req.logger.info("[AUTH] Tentative de connexion pour: \(loginData.email)")
+        
         guard isValidEmailDomain(loginData.email) else {
+            req.logger.warning("[AUTH] Domaine d'email non autorisé: \(loginData.email)")
             throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé. Veuillez utiliser une adresse email professionnelle ou personnelle valide.")
         }
         
         guard isValidPassword(loginData.password) else {
+            req.logger.warning("[AUTH] Mot de passe invalide pour: \(loginData.email)")
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
         
@@ -27,12 +31,14 @@ struct AuthController: RouteCollection {
             .filter(\.$isActive == true)
             .first()
         else {
+            req.logger.warning("[AUTH] Utilisateur introuvable ou inactif: \(loginData.email)")
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
 
         let isPasswordValid = try req.password.verify(loginData.password, created: user.passwordHash)
 
         if !isPasswordValid {
+            req.logger.warning("[AUTH] Mot de passe incorrect pour: \(loginData.email)")
             throw Abort(.unauthorized, reason: "Email ou mot de passe incorrect")
         }
 
@@ -44,6 +50,8 @@ struct AuthController: RouteCollection {
         )
 
         let token = try req.jwt.sign(payload)
+        
+        req.logger.info("[AUTH] Connexion réussie - Email: \(user.email), Rôle: \(user.role), ID: \(user.id?.uuidString ?? "N/A")")
 
         return LoginResponse(
             success: true,
@@ -56,12 +64,16 @@ struct AuthController: RouteCollection {
     /// POST /auth/register - Inscription d'un nouvel utilisateur
     func register(req: Request) async throws -> LoginResponse {
         let registerData = try req.content.decode(RegisterRequest.self)
+        
+        req.logger.info("[AUTH] Tentative d'inscription pour: \(registerData.email)")
 
         guard isValidEmailDomain(registerData.email) else {
+            req.logger.warning("[AUTH] Domaine d'email non autorisé pour inscription: \(registerData.email)")
             throw Abort(.forbidden, reason: "Ce domaine d'email n'est pas autorisé")
         }
 
         guard isValidPassword(registerData.password) else {
+            req.logger.warning("[AUTH] Mot de passe invalide pour inscription: \(registerData.email)")
             throw Abort(.badRequest, reason: "Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial")
         }
 
@@ -70,6 +82,7 @@ struct AuthController: RouteCollection {
             .first()
 
         if existingUser != nil {
+            req.logger.warning("[AUTH] Email déjà utilisé: \(registerData.email)")
             throw Abort(.conflict, reason: "Cet email est déjà utilisé")
         }
 
@@ -96,6 +109,8 @@ struct AuthController: RouteCollection {
         )
 
         let token = try req.jwt.sign(payload)
+        
+        req.logger.info("[AUTH] Inscription réussie - Email: \(user.email), Nom: \(user.fullName), Rôle: \(user.role), ID: \(user.id?.uuidString ?? "N/A")")
 
         return LoginResponse(
             success: true,
