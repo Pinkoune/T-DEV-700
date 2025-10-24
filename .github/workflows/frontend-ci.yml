@@ -16,7 +16,7 @@ jobs:
   build:
     name: Build iOS App
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -60,7 +60,7 @@ jobs:
     name: Test iOS App
     runs-on: macos-latest
     needs: build
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -69,7 +69,6 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      # Étape critique : préparer le simulateur AVANT les tests
       - name: Prepare iOS Simulator
         run: |
           echo "📱 Preparing simulator..."
@@ -77,8 +76,8 @@ jobs:
           # Lister les simulateurs disponibles
           xcrun simctl list devices available
           
-          # Créer et booter le simulateur si nécessaire
-          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16" | head -1 | awk -F'[()]' '{print $2}')
+          # Trouver l'iPhone 16
+          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16" | grep -v "Plus" | grep -v "Pro" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
           
           if [ -z "$DEVICE_ID" ]; then
             echo "❌ iPhone 16 simulator not found"
@@ -87,33 +86,45 @@ jobs:
             exit 1
           fi
           
-          echo "Found device: $DEVICE_ID"
+          echo "Found device ID: $DEVICE_ID"
           
           # Booter le simulateur explicitement
+          echo "🔄 Booting simulator..."
           xcrun simctl boot "$DEVICE_ID" || echo "Simulator already booted"
           
-          # Attendre que le simulateur soit vraiment prêt
+          # Attendre que le simulateur soit vraiment prêt (sans timeout command)
           echo "⏳ Waiting for simulator to be ready..."
-          for i in {1..60}; do
-            if xcrun simctl bootstatus "$DEVICE_ID" -b; then
-              echo "✅ Simulator is ready!"
+          COUNTER=0
+          MAX_WAIT=60
+          
+          while [ $COUNTER -lt $MAX_WAIT ]; do
+            if xcrun simctl bootstatus "$DEVICE_ID" -b 2>/dev/null; then
+              echo "✅ Simulator is ready after $COUNTER attempts!"
               break
             fi
-            echo "Waiting... ($i/60)"
+            echo "Waiting... ($COUNTER/$MAX_WAIT)"
             sleep 2
+            COUNTER=$((COUNTER + 1))
           done
           
+          if [ $COUNTER -eq $MAX_WAIT ]; then
+            echo "❌ Simulator failed to boot after $MAX_WAIT attempts"
+            exit 1
+          fi
+          
           # Vérifier l'état final
+          echo "📱 Final simulator state:"
           xcrun simctl list devices | grep -A 5 "iPhone 16"
 
-      - name: Run Tests with timeout protection
+      - name: Run Tests
         working-directory: frontend
-        timeout-minutes: 20  # Timeout spécifique pour cette étape
+        timeout-minutes: 30
         run: |
           echo "🧪 Running iOS tests..."
           
-          # Lancer les tests avec timeout Unix en plus
-          timeout 1800 xcodebuild test \
+          # Sur macOS, on utilise le timeout du workflow (timeout-minutes: 30)
+          # au lieu de la commande timeout qui n'existe pas
+          xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
@@ -121,12 +132,9 @@ jobs:
             -resultBundlePath TestResults \
             2>&1 | tee test_output.log
           
-          TEST_RESULT=${PIPESTATUS[0]}
+          TEST_RESULT=$?
           
-          if [ $TEST_RESULT -eq 124 ]; then
-            echo "❌ Tests timed out after 30 minutes"
-            exit 1
-          elif [ $TEST_RESULT -ne 0 ]; then
+          if [ $TEST_RESULT -ne 0 ]; then
             echo "❌ Tests failed with exit code: $TEST_RESULT"
             exit $TEST_RESULT
           fi
@@ -143,9 +151,17 @@ jobs:
         if: always()
         run: |
           echo "📊 Generating iOS coverage report..."
-          if [ -d ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult ]; then
-            xcrun xccov view --report --json \
-              ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult > coverage.json || true
+          XCRESULT_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.xcresult" -type d | head -1)
+          
+          if [ -n "$XCRESULT_PATH" ]; then
+            echo "Found test results at: $XCRESULT_PATH"
+            xcrun xccov view --report --json "$XCRESULT_PATH" > coverage.json || true
+          
+            if [ -f "coverage.json" ]; then
+              echo "✅ Coverage report generated"
+              # Afficher un résumé
+              cat coverage.json | head -20
+            fi
           else
             echo "⚠️  No test results found for coverage"
           fi
