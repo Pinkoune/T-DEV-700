@@ -7,9 +7,9 @@
 import SwiftUI
 
 struct ManagerAccount: View {
-    @State private var firstName = "Mac"
-    @State private var lastName = "Andcheese"
-    @State private var email = "mac.andcheese@mcapple.com"
+    @State private var firstName = ""
+    @State private var lastName = ""
+    @State private var email = ""
     @State private var showDeleteAlert = false
     @State private var showDisconnectAlert = false
     @State private var showEditProfile = false
@@ -17,6 +17,8 @@ struct ManagerAccount: View {
     @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
+    @State private var showLogin = false
+    @State private var isLoggingOut = false
     
     var body: some View {
             ZStack {
@@ -78,6 +80,18 @@ struct ManagerAccount: View {
         } message: {
             Text("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")
         }
+        .fullScreenCover(isPresented: $showLogin) {
+            Login()
+        }
+        .onAppear {
+            loadUserData()
+        }
+    }
+    
+    private func loadUserData() {
+        firstName = UserDefaults.standard.string(forKey: "userFirstName") ?? ""
+        lastName = UserDefaults.standard.string(forKey: "userLastName") ?? ""
+        email = UserDefaults.standard.string(forKey: "userEmail") ?? ""
     }
     
     private func savePassword() {
@@ -88,7 +102,25 @@ struct ManagerAccount: View {
     }
     
     private func disconnect() {
-        print("Disconnecting...")
+        isLoggingOut = true
+        
+        Task {
+            do {
+                try await AuthService.logout()
+                
+                await MainActor.run {
+                    isLoggingOut = false
+                    print("Déconnexion réussie!")
+                    showLogin = true
+                }
+            } catch {
+                await MainActor.run {
+                    isLoggingOut = false
+                    print("Erreur lors de la déconnexion: \(error.localizedDescription)")
+                    showLogin = true
+                }
+            }
+        }
     }
     
     private func deleteAccount() {

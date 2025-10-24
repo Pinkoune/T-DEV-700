@@ -147,7 +147,11 @@ struct Login: View {
                 
                 await MainActor.run {
                     isLoading = false
-                    print("✅ Connexion réussie! Bienvenue \(response.user.fullName)")
+                    print("Connexion réussie! Bienvenue \(response.user.fullName)")
+                    
+                    UserDefaults.standard.set(response.user.firstName, forKey: "userFirstName")
+                    UserDefaults.standard.set(response.user.lastName, forKey: "userLastName")
+                    UserDefaults.standard.set(response.user.email, forKey: "userEmail")
                     
                     if response.user.role == "manager" {
                         showManagerPage = true
