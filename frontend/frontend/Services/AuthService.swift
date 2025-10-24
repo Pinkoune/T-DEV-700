@@ -21,7 +21,12 @@ class AuthService {
         let loginData = LoginRequest(email: email, password: password)
         request.httpBody = try JSONEncoder().encode(loginData)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw AuthError.networkError
+        }
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AuthError.invalidResponse
@@ -89,6 +94,7 @@ enum AuthError: LocalizedError {
     case invalidResponse
     case unauthorized
     case serverError(String)
+    case networkError
     
     var errorDescription: String? {
         switch self {
@@ -100,6 +106,8 @@ enum AuthError: LocalizedError {
             return "Email ou mot de passe incorrect"
         case .serverError(let message):
             return message
+        case .networkError:
+            return "Problème de connexion au serveur"
         }
     }
 }
