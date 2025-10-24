@@ -148,6 +148,12 @@ struct Login: View {
                 await MainActor.run {
                     isLoading = false
                     print("✅ Connexion réussie! Bienvenue \(response.user.fullName)")
+                    
+                    if response.user.role == "manager" {
+                        showManagerPage = true
+                    } else {
+                        showEmployeePage = true
+                    }
                 }
             } catch {
                 await MainActor.run {
