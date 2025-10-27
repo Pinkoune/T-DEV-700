@@ -19,6 +19,7 @@ struct EmployeeAccount: View {
     @State private var confirmPassword = ""
     @State private var showLogin = false
     @State private var isLoggingOut = false
+    @State private var showLogoutSuccess = false
     
     var body: some View {
             ZStack {
@@ -64,12 +65,15 @@ struct EmployeeAccount: View {
         .sheet(isPresented: $showEditProfile) {
             EditProfileSpace(
                 firstName: $firstName,
-                lastName: $lastName
+                lastName: $lastName,
+                email: $email
             )
         }
         .sheet(isPresented: $showEditEmail) {
             EditEmailSpace(
-                email: $email
+                email: $email,
+                firstName: $firstName,
+                lastName: $lastName
             )
         }
         .alert("Se déconnecter", isPresented: $showDisconnectAlert) {
@@ -82,10 +86,17 @@ struct EmployeeAccount: View {
             Button("Annuler", role: .cancel) { }
             Button("Supprimer", role: .destructive, action: deleteAccount)
         } message: {
-            Text("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")
+            Text("Êtes-vous sûr de vouloir supprimer votre compte ?")
         }
         .fullScreenCover(isPresented: $showLogin) {
             Login()
+        }
+        .alert("Déconnexion réussie", isPresented: $showLogoutSuccess) {
+            Button("OK") {
+                showLogin = true
+            }
+        } message: {
+            Text("Vous avez été déconnecté avec succès")
         }
         .onAppear {
             loadUserData()
@@ -96,6 +107,15 @@ struct EmployeeAccount: View {
         firstName = UserDefaults.standard.string(forKey: "userFirstName") ?? ""
         lastName = UserDefaults.standard.string(forKey: "userLastName") ?? ""
         email = UserDefaults.standard.string(forKey: "userEmail") ?? ""
+        
+        print("Données chargées - Prénom: \(firstName), Nom: \(lastName), Email: \(email)")
+        print("Token présent: \(AuthService.getToken() != nil)")
+        
+        if firstName.isEmpty && lastName.isEmpty && email.isEmpty && AuthService.getToken() != nil {
+            print("Données utilisateur manquantes, déconnexion nécessaire")
+            AuthService.clearLocalData()
+            showLogin = true
+        }
     }
     
     private func savePassword() {
@@ -115,13 +135,13 @@ struct EmployeeAccount: View {
                 await MainActor.run {
                     isLoggingOut = false
                     print("Déconnexion réussie!")
-                    showLogin = true
+                    showLogoutSuccess = true
                 }
             } catch {
                 await MainActor.run {
                     isLoggingOut = false
                     print("Erreur lors de la déconnexion: \(error.localizedDescription)")
-                    showLogin = true
+                    showLogoutSuccess = true
                 }
             }
         }
