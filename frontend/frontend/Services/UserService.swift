@@ -8,7 +8,7 @@
 import Foundation
 
 class UserService {
-    static let baseURL = "http://localhost/auth"
+    static let baseURL = "\(Config.baseURL)/auth"
     
     static func updateProfile(firstName: String, lastName: String, email: String) async throws -> UpdateProfileResponse {
         guard let url = URL(string: "\(baseURL)/update-profile") else {
@@ -44,7 +44,7 @@ class UserService {
         
         if httpResponse.statusCode != 200 {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                throw AuthError.serverError(errorResponse.reason ?? "Erreur inconnue")
+                throw AuthError.serverError(errorResponse.reason ?? "Erreur du serveur")
             }
             throw AuthError.unauthorized
         }

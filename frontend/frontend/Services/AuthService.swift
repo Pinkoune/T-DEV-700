@@ -8,7 +8,7 @@
 import Foundation
 
 class AuthService {
-    static let baseURL = "http://localhost/auth"
+    static let baseURL = "\(Config.baseURL)/auth"
     
     static func login(email: String, password: String) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/login") else {
@@ -34,7 +34,7 @@ class AuthService {
         
         if httpResponse.statusCode != 200 {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                throw AuthError.serverError(errorResponse.reason ?? "Erreur inconnue")
+                throw AuthError.serverError(errorResponse.reason ?? "Erreur du serveur")
             }
             throw AuthError.unauthorized
         }
@@ -125,7 +125,7 @@ class AuthService {
         
         if httpResponse.statusCode != 200 {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                throw AuthError.serverError(errorResponse.reason ?? "Erreur inconnue")
+                throw AuthError.serverError(errorResponse.reason ?? "Erreur du serveur")
             }
             throw AuthError.unauthorized
         }

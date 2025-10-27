@@ -149,6 +149,7 @@ struct Login: View {
                     isLoading = false
                     print("Connexion réussie! Bienvenue \(response.user.fullName)")
                     
+                    UserDefaults.standard.set(response.user.id, forKey: "userId")
                     UserDefaults.standard.set(response.user.firstName, forKey: "userFirstName")
                     UserDefaults.standard.set(response.user.lastName, forKey: "userLastName")
                     UserDefaults.standard.set(response.user.email, forKey: "userEmail")
