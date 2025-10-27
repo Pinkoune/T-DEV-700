@@ -12,6 +12,7 @@ struct EmployeeHomePage: View {
     @State private var userId = ""
     @State private var hasActiveEntry = false
     @State private var refreshKey = UUID()
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         ZStack {
@@ -43,7 +44,18 @@ struct EmployeeHomePage: View {
         }
         .onAppear {
             loadUserData()
+            refreshData()
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                refreshData()
+            }
+        }
+    }
+    
+    private func refreshData() {
+        refreshKey = UUID()
+        loadActiveStatus()
     }
     
     private func loadUserData() {

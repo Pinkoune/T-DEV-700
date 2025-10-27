@@ -74,6 +74,9 @@ struct PointerCard: View {
                     if let timeEntry = response.timeEntry {
                         arrivalTime = timeEntry.arrival
                         hoursWorked = calculateHours(from: timeEntry.arrival)
+                    } else {
+                        arrivalTime = nil
+                        hoursWorked = 0.0
                     }
                 }
             } catch {
