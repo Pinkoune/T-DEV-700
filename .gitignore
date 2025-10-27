@@ -5,3 +5,4 @@
 .AppleDouble
 .LSOverride
 docker-compose.override.yml
+.idea
