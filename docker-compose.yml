@@ -1,84 +1,104 @@
-version: '3.8'
-
 services:
-  # Service Docker Socket Proxy (Sécurité)
-  docker-proxy:
-    image: tecnativa/docker-socket-proxy:latest
-    container_name: docker-proxy
+  postgres:
+    image: postgres:16-alpine
+    container_name: project-postgres
     environment:
-      CONTAINERS: 1
-      SERVICES: 1
-      TASKS: 1
-      NETWORKS: 1
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - "5432:5432"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - postgres-data:/var/lib/postgresql/data
     networks:
-      - docker-proxy-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
+      - project-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Backend Vapor
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: project-backend
+    env_file:
+      - .env
     environment:
-      LOG_LEVEL: info
-      FIREBASE_AUTH_EMULATOR_HOST: firebase:9099
-      FIRESTORE_EMULATOR_HOST: firebase:8080
-      FIREBASE_STORAGE_EMULATOR_HOST: firebase:9199
-      # Configuration JWT EdDSA
-      JWT_EDDSA_PRIVATE_KEY: ${JWT_EDDSA_PRIVATE_KEY}
-      JWT_EDDSA_PUBLIC_KEY: ${JWT_EDDSA_PUBLIC_KEY}
-      JWT_ISSUER: "time-management-api"
-      JWT_AUDIENCE: "mobile-app"
-      JWT_ACCESS_TOKEN_LIFETIME: 3600
-      JWT_REFRESH_TOKEN_LIFETIME: 604800
+      ENVIRONMENT: development
+      LOG_LEVEL: ${LOG_LEVEL}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME}
     expose:
       - "8080"
     volumes:
       - ./backend/Public:/app/Public:ro
     depends_on:
-      firebase:
+      postgres:
         condition: service_healthy
     networks:
-      - frontend-network
-      - backend-network
+      - project-network
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      # Router principal pour /api
+      - "traefik.http.routers.backend-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-api.middlewares=backend-stripprefix,backend-headers"
+      # Router pour /auth
+      - "traefik.http.routers.backend-auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.backend-auth.entrypoints=web"
+      - "traefik.http.routers.backend-auth.service=backend"
+      - "traefik.http.routers.backend-auth.middlewares=backend-headers"
+      # Router pour /users
+      - "traefik.http.routers.backend-users.rule=PathPrefix(`/users`)"
+      - "traefik.http.routers.backend-users.entrypoints=web"
+      - "traefik.http.routers.backend-users.service=backend"
+      - "traefik.http.routers.backend-users.middlewares=backend-headers"
+      # Router pour /performances
+      - "traefik.http.routers.backend-performances.rule=PathPrefix(`/performances`)"
+      - "traefik.http.routers.backend-performances.entrypoints=web"
+      - "traefik.http.routers.backend-performances.service=backend"
+      - "traefik.http.routers.backend-performances.middlewares=backend-headers"
+      # Router pour /timeentries
+      - "traefik.http.routers.backend-timeentries.rule=PathPrefix(`/timeentries`)"
+      - "traefik.http.routers.backend-timeentries.entrypoints=web"
+      - "traefik.http.routers.backend-timeentries.service=backend"
+      - "traefik.http.routers.backend-timeentries.middlewares=backend-headers"
+      # Router pour /teams
+      - "traefik.http.routers.backend-teams.rule=PathPrefix(`/teams`)"
+      - "traefik.http.routers.backend-teams.entrypoints=web"
+      - "traefik.http.routers.backend-teams.service=backend"
+      - "traefik.http.routers.backend-teams.middlewares=backend-headers"
+      # Router pour /clocks
+      - "traefik.http.routers.backend-clocks.rule=PathPrefix(`/clocks`)"
+      - "traefik.http.routers.backend-clocks.entrypoints=web"
+      - "traefik.http.routers.backend-clocks.service=backend"
+      - "traefik.http.routers.backend-clocks.middlewares=backend-headers"
+      # Router pour /reports
+      - "traefik.http.routers.backend-reports.rule=PathPrefix(`/reports`)"
+      - "traefik.http.routers.backend-reports.entrypoints=web"
+      - "traefik.http.routers.backend-reports.service=backend"
+      - "traefik.http.routers.backend-reports.middlewares=backend-headers"
+      # Router pour /dashboard
+      - "traefik.http.routers.backend-dashboard.rule=PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.backend-dashboard.entrypoints=web"
+      - "traefik.http.routers.backend-dashboard.service=backend"
+      - "traefik.http.routers.backend-dashboard.middlewares=backend-headers"
+      # Router pour /health
+      - "traefik.http.routers.backend-health.rule=PathPrefix(`/health`)"
+      - "traefik.http.routers.backend-health.entrypoints=web"
+      - "traefik.http.routers.backend-health.service=backend"
+      # Service backend
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      # Middlewares
       - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.backend.middlewares=backend-stripprefix,backend-headers"
-      # Headers de sécurité
       - "traefik.http.middlewares.backend-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.middlewares.backend-headers.headers.customresponseheaders.X-API-Version=1.0"
       # Health check
@@ -86,7 +106,6 @@ services:
       - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.backend.loadbalancer.healthcheck.timeout=3s"
 
-  # Mobile Client (Factice pour iOS)
   mobile-client:
     build:
       context: ./frontend
@@ -95,86 +114,24 @@ services:
     volumes:
       - mobile-artifacts:/output
     networks:
-      - frontend-network
+      - project-network
     command: /bin/sh -c "echo 'iOS SwiftUI project ready' && tail -f /dev/null"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mobile-artifacts.rule=PathPrefix(`/download`)"
       - "traefik.http.routers.mobile-artifacts.entrypoints=web"
       - "traefik.http.services.mobile-artifacts.loadbalancer.server.port=8000"
 
-  # Firebase Emulators
-  firebase:
-    image: gcr.io/firebase-tools:latest
-    container_name: project-firebase
-    expose:
-      - "4000"
-      - "8080"
-      - "9099"
-      - "9199"
-    volumes:
-      - ./backend/firebase:/firebase
-      - firebase-data:/root/.cache/firebase/emulators
-    networks:
-      - backend-network
-      - frontend-network
-    working_dir: /firebase
-    command: firebase emulators:start --project demo-project --import=/firebase/data --export-on-exit=/firebase/data
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:4000')",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.firebase-ui.rule=PathPrefix(`/firebase`) || Host(`firebase.localhost`)"
-      - "traefik.http.routers.firebase-ui.entrypoints=web"
-      - "traefik.http.services.firebase-ui.loadbalancer.server.port=4000"
-      # Firestore Emulator
-      - "traefik.http.routers.firestore.rule=PathPrefix(`/firestore`)"
-      - "traefik.http.routers.firestore.entrypoints=web"
-      - "traefik.http.services.firestore.loadbalancer.server.port=8080"
-      # Auth Emulator
-      - "traefik.http.routers.firebase-auth.rule=PathPrefix(`/auth-emulator`)"
-      - "traefik.http.routers.firebase-auth.entrypoints=web"
-      - "traefik.http.services.firebase-auth.loadbalancer.server.port=9099"
 
-  # Traefik Reverse Proxy
   traefik:
     image: traefik:v3.0
     container_name: project-traefik
     command:
+      - "--api.insecure=true"
       - "--api.dashboard=true"
-      - "--api.debug=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=frontend-network"
+      - "--providers.docker.network=project-network"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--log.level=INFO"
@@ -186,140 +143,40 @@ services:
       - "443:443"
       - "8081:8080"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
       - traefik_certs:/letsencrypt
-    environment:
-      - DOCKER_HOST=tcp://docker-proxy:2375
-      # Authentification basique pour le dashboard
-      - TRAEFIK_API_DASHBOARD_BASICAUTH=admin:$$2y$$10$$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
-    depends_on:
-      - docker-proxy
     networks:
-      - frontend-network
-      - docker-proxy-network
+      - project-network
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 128M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
 
-  # Service de monitoring Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: project-prometheus
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: project-pgweb
+    environment:
+      DATABASE_URL: postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?sslmode=disable
     ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - "8082:8081"
     networks:
-      - monitoring-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 256M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
-
-  # Collecteur de métriques Node Exporter
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: project-node-exporter
-    ports:
-      - "9100:9100"
-    networks:
-      - monitoring-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
-
-  # Agrégateur de logs Loki
-  loki:
-    image: grafana/loki:latest
-    container_name: project-loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    networks:
-      - monitoring-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 128M
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
+      - project-network
+    depends_on:
+      - postgres
+    restart: always
 
 networks:
-  # Réseau frontend (Traefik <-> Services publics)
-  frontend-network:
+  project-network:
     driver: bridge
-    internal: false
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
-
-  # Réseau backend (Backend <-> Firebase)
-  backend-network:
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.21.0.0/24
-
-  # Réseau proxy Docker (isolé)
-  docker-proxy-network:
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.22.0.0/24
-
-  # Réseau monitoring
-  monitoring-network:
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.23.0.0/24
 
 volumes:
-  firebase-data:
+  postgres-data:
     driver: local
   mobile-artifacts:
     driver: local
   traefik_certs:
-    driver: local
-  prometheus_data:
-    driver: local
-  loki_data:
     driver: local

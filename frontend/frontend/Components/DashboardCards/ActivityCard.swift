@@ -23,7 +23,7 @@ struct ActivityCard: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(activity.title)
-                    .font(.headline)
+                    .font(.custom("McDonaldsHelvetica", size: 18))
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                 
@@ -49,8 +49,7 @@ struct ActivityCard: View {
             
             HStack(spacing: 8) {
                 Text(activity.timeSpent)
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.custom("McDonaldsHelvetica", size: 18))
                     .foregroundColor(.white)
             }
         }

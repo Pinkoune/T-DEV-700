@@ -1,0 +1,8 @@
+.env
+.env.local
+.env.*.local
+.DS_Store
+.AppleDouble
+.LSOverride
+docker-compose.override.yml
+.idea

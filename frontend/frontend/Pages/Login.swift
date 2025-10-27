@@ -15,7 +15,7 @@ struct Login: View {
     @State private var showForgotPassword = false
     @State private var showEmployeePage = false
     @State private var showManagerPage = false
-    
+
     var body: some View {
         ZStack {
             Color(Color.mainGreen)
@@ -97,7 +97,7 @@ struct Login: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                
+
                 Button(action: {
                     showForgotPassword = true
                 }) {
@@ -147,7 +147,18 @@ struct Login: View {
                 
                 await MainActor.run {
                     isLoading = false
-                    print("✅ Connexion réussie! Bienvenue \(response.user.fullName)")
+                    print("Connexion réussie! Bienvenue \(response.user.fullName)")
+                    
+                    UserDefaults.standard.set(response.user.id, forKey: "userId")
+                    UserDefaults.standard.set(response.user.firstName, forKey: "userFirstName")
+                    UserDefaults.standard.set(response.user.lastName, forKey: "userLastName")
+                    UserDefaults.standard.set(response.user.email, forKey: "userEmail")
+                    
+                    if response.user.role == "manager" {
+                        showManagerPage = true
+                    } else {
+                        showEmployeePage = true
+                    }
                 }
             } catch {
                 await MainActor.run {

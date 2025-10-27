@@ -36,7 +36,7 @@ struct EmployeeDashboard: View {
         }
     }
     
-    private var sampleActivities: [TimeEntry] {
+    var sampleActivities: [TimeEntry] {
             [
                 TimeEntry(
                     id: "1",

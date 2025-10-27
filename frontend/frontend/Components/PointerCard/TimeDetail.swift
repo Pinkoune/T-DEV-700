@@ -7,10 +7,10 @@ struct TimeDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.custom("McDonaldsHelvetica", size: 18))
                 .foregroundColor(.white)
             Text(time)
-                .font(.system(size: 24, weight: .bold))
+                .font(.custom("McDonaldsHelvetica", size: 22))
                 .foregroundColor(.mainYellow)
         }
     }
