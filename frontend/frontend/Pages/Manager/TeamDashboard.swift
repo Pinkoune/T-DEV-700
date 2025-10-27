@@ -11,20 +11,10 @@ struct TeamDashboard: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-//                HeaderView(userType: .manager, title: team.name)
-//                    .padding(.top)
+                HeaderView(userType: .manager, title: team.name)
+                    .padding(.top)
                 
-                HStack {
-                    Text(team.name)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.bottom, 20)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                
-                TeamCard(team: team)
+                StatsTeamCard()
                     .padding(.horizontal, 10)
                 
                 Button(action: {
@@ -38,7 +28,7 @@ struct TeamDashboard: View {
                         .background(Color.mainYellow)
                         .overlay(
                             RoundedRectangle(cornerRadius: 100)
-                                .stroke(Color.white, lineWidth: 2)
+                                .stroke(Color.white, lineWidth: 0.5)
                                 .shadow(
                                     color: .mainGreen.opacity(1.0),
                                     radius: 3,
@@ -78,7 +68,7 @@ struct TeamDashboard: View {
                 }
                 .padding(.bottom, 130)
             }
-//            .padding(.top, -70)
+            .padding(.top, -70)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
