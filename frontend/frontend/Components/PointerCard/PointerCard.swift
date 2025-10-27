@@ -125,7 +125,7 @@ struct DynamicStatusBadge: View {
                 .foregroundColor(.white)
             Spacer()
             Circle()
-                .fill(isActive ? Color.red : Color.gray)
+                .fill(isActive ? Color.green : Color.red)
                 .frame(width: 12, height: 12)
         }
     }

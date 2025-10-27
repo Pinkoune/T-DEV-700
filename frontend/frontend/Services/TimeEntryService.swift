@@ -75,6 +75,36 @@ class TimeEntryService {
         let activeEntry = try decoder.decode(ActiveTimeEntryResponse.self, from: data)
         return activeEntry
     }
+    
+    /// Création de l'historique des pointages avec les données de la base de données. 
+    static func getTimeEntries(userId: String, limit: Int = 10) async throws -> [TimeEntryResponse] {
+        guard let url = URL(string: "\(baseURL)/timeentries/by-user/\(userId)?limit=\(limit)") else {
+            throw AuthError.invalidURL
+        }
+        
+        guard let token = AuthService.getToken() else {
+            throw AuthError.unauthorized
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            throw AuthError.serverError("Erreur lors de la récupération de l'historique")
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let entries = try decoder.decode([TimeEntryResponse].self, from: data)
+        return entries
+    }
 }
 
 struct ClockRequest: Codable {
