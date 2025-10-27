@@ -89,7 +89,6 @@ struct SliderEmployeeNavbar: View {
             HStack(spacing: buttonSpacing) {
                 ForEach(0..<orderedButtons.count, id: \.self) { position in
                     let buttonData = orderedButtons[position]
-                    let isCenter = position == 1
                     let isSelected = buttonData.index == selectedTab
                     
                     Button(action: {
