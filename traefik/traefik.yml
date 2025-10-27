@@ -1,0 +1,40 @@
+# API et Dashboard
+api:
+  dashboard: true
+  insecure: true
+
+# Points d'entrée
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+# Providers
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: project-network
+    watch: true
+
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# Logs
+log:
+  level: INFO
+  format: json
+  filePath: /var/log/traefik/traefik.log
+
+accessLog:
+  format: json
+  filePath: /var/log/traefik/access.log
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: keep
+      names:
+        Authorization: drop
+        Cookie: drop

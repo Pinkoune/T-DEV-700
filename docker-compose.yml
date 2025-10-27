@@ -1,0 +1,182 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: project-postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - project-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: project-backend
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: ${LOG_LEVEL}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME}
+    expose:
+      - "8080"
+    volumes:
+      - ./backend/Public:/app/Public:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - project-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      # Router principal pour /api
+      - "traefik.http.routers.backend-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=web"
+      - "traefik.http.routers.backend-api.service=backend"
+      - "traefik.http.routers.backend-api.middlewares=backend-stripprefix,backend-headers"
+      # Router pour /auth
+      - "traefik.http.routers.backend-auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.backend-auth.entrypoints=web"
+      - "traefik.http.routers.backend-auth.service=backend"
+      - "traefik.http.routers.backend-auth.middlewares=backend-headers"
+      # Router pour /users
+      - "traefik.http.routers.backend-users.rule=PathPrefix(`/users`)"
+      - "traefik.http.routers.backend-users.entrypoints=web"
+      - "traefik.http.routers.backend-users.service=backend"
+      - "traefik.http.routers.backend-users.middlewares=backend-headers"
+      # Router pour /performances
+      - "traefik.http.routers.backend-performances.rule=PathPrefix(`/performances`)"
+      - "traefik.http.routers.backend-performances.entrypoints=web"
+      - "traefik.http.routers.backend-performances.service=backend"
+      - "traefik.http.routers.backend-performances.middlewares=backend-headers"
+      # Router pour /timeentries
+      - "traefik.http.routers.backend-timeentries.rule=PathPrefix(`/timeentries`)"
+      - "traefik.http.routers.backend-timeentries.entrypoints=web"
+      - "traefik.http.routers.backend-timeentries.service=backend"
+      - "traefik.http.routers.backend-timeentries.middlewares=backend-headers"
+      # Router pour /teams
+      - "traefik.http.routers.backend-teams.rule=PathPrefix(`/teams`)"
+      - "traefik.http.routers.backend-teams.entrypoints=web"
+      - "traefik.http.routers.backend-teams.service=backend"
+      - "traefik.http.routers.backend-teams.middlewares=backend-headers"
+      # Router pour /clocks
+      - "traefik.http.routers.backend-clocks.rule=PathPrefix(`/clocks`)"
+      - "traefik.http.routers.backend-clocks.entrypoints=web"
+      - "traefik.http.routers.backend-clocks.service=backend"
+      - "traefik.http.routers.backend-clocks.middlewares=backend-headers"
+      # Router pour /reports
+      - "traefik.http.routers.backend-reports.rule=PathPrefix(`/reports`)"
+      - "traefik.http.routers.backend-reports.entrypoints=web"
+      - "traefik.http.routers.backend-reports.service=backend"
+      - "traefik.http.routers.backend-reports.middlewares=backend-headers"
+      # Router pour /dashboard
+      - "traefik.http.routers.backend-dashboard.rule=PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.backend-dashboard.entrypoints=web"
+      - "traefik.http.routers.backend-dashboard.service=backend"
+      - "traefik.http.routers.backend-dashboard.middlewares=backend-headers"
+      # Router pour /health
+      - "traefik.http.routers.backend-health.rule=PathPrefix(`/health`)"
+      - "traefik.http.routers.backend-health.entrypoints=web"
+      - "traefik.http.routers.backend-health.service=backend"
+      # Service backend
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      # Middlewares
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.middlewares.backend-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.backend-headers.headers.customresponseheaders.X-API-Version=1.0"
+      # Health check
+      - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.timeout=3s"
+
+  mobile-client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mobile
+    container_name: project-mobile-client
+    volumes:
+      - mobile-artifacts:/output
+    networks:
+      - project-network
+    command: /bin/sh -c "echo 'iOS SwiftUI project ready' && tail -f /dev/null"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mobile-artifacts.rule=PathPrefix(`/download`)"
+      - "traefik.http.routers.mobile-artifacts.entrypoints=web"
+      - "traefik.http.services.mobile-artifacts.loadbalancer.server.port=8000"
+
+
+  traefik:
+    image: traefik:v3.0
+    container_name: project-traefik
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=project-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - project-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: project-pgweb
+    environment:
+      DATABASE_URL: postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?sslmode=disable
+    ports:
+      - "8082:8081"
+    networks:
+      - project-network
+    depends_on:
+      - postgres
+    restart: always
+
+networks:
+  project-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  mobile-artifacts:
+    driver: local
+  traefik_certs:
+    driver: local

@@ -1,0 +1,123 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'backend/**'
+
+env:
+  SWIFT_VERSION: '6.1'
+
+jobs:
+  build:
+    name: Build Backend
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+      
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: backend/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('backend/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+      
+      - name: Build Backend
+        working-directory: backend
+        run: |
+          echo "Building Vapor backend..."
+          swift build -c release
+          echo "Backend build successful"
+      
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/.build/release/backend
+
+  test:
+    name: Test Backend
+    runs-on: self-hosted
+    needs: build
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vapor
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: vapor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ env.SWIFT_VERSION }}
+      
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: backend/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('backend/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run Tests
+        working-directory: backend
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USERNAME: vapor
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: vapor_test
+        run: |
+          echo "Running backend tests with PostgreSQL..."
+          swift test --enable-code-coverage
+          echo "All tests passed"
+      
+      - name: Generate coverage
+        working-directory: backend
+        run: |
+          echo "Generating coverage report..."
+          xcrun llvm-cov export -format="lcov" \
+            .build/debug/backendPackageTests.xctest/Contents/MacOS/backendPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || true
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.lcov
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/.build/debug/*.xctest

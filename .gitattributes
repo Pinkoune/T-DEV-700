@@ -1,0 +1,12 @@
+*.pbxproj binary
+*.xcscheme text
+*.xcworkspacedata text
+*.xcuserstate binary
+*.swift text
+*.h text
+*.m text
+*.yml text
+*.yaml text
+Dockerfile text
+*.dockerignore text
+*.sh text

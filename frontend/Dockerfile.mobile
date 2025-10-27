@@ -1,0 +1,43 @@
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk add --no-cache bash
+
+COPY . .
+
+RUN mkdir -p /output && \
+    echo "iOS SwiftUI Mobile Client" > /output/README.txt && \
+    echo "================================" >> /output/README.txt && \
+    echo "" >> /output/README.txt && \
+    echo "Project Type: iOS Native Application" >> /output/README.txt && \
+    echo "Framework: SwiftUI" >> /output/README.txt && \
+    echo "Language: Swift" >> /output/README.txt && \
+    echo "" >> /output/README.txt && \
+    echo "Build Instructions:" >> /output/README.txt && \
+    echo "-------------------" >> /output/README.txt && \
+    echo "1. Open frontend/frontend.xcodeproj in Xcode" >> /output/README.txt && \
+    echo "2. Select your target device or simulator" >> /output/README.txt && \
+    echo "3. Build and run with Cmd+R" >> /output/README.txt && \
+    echo "" >> /output/README.txt && \
+    echo "For CI/CD Builds:" >> /output/README.txt && \
+    echo "-----------------" >> /output/README.txt && \
+    echo "Use macOS runners with:" >> /output/README.txt && \
+    echo "  - GitHub Actions (macOS-latest)" >> /output/README.txt && \
+    echo "  - Codemagic" >> /output/README.txt && \
+    echo "  - Bitrise" >> /output/README.txt && \
+    echo "  - CircleCI (macOS plan)" >> /output/README.txt && \
+    echo "" >> /output/README.txt && \
+    echo "Note: iOS apps cannot be built in Docker on Linux" >> /output/README.txt && \
+    echo "due to Apple's licensing restrictions and technical" >> /output/README.txt && \
+    echo "requirements (Xcode only runs on macOS)." >> /output/README.txt && \
+    echo "" >> /output/README.txt && \
+    echo "Project Location: /app" >> /output/README.txt && \
+    echo "Build Status: Ready for Xcode build" >> /output/README.txt
+
+RUN echo "iOS_PROJECT_READY" > /output/status.txt && \
+    date >> /output/build-date.txt
+
+VOLUME ["/output"]
+
+CMD ["tail", "-f", "/dev/null"]
