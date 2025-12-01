@@ -58,20 +58,20 @@ struct SliderEmployeeNavbar: View {
             ]
         case 1:
             return [
-                (.customImage(.fries), 0),
                 (.customImage(.store), 1),
+                (.customImage(.fries), 0),
                 (.customImage(.burger), 2)
             ]
         case 2:
             return [
                 (.customImage(.store), 1),
-                (.customImage(.burger), 2),
-                (.customImage(.fries), 0)
+                (.customImage(.fries), 0),
+                (.customImage(.burger), 2)
             ]
         default:
             return [
-                (.customImage(.fries), 0),
                 (.customImage(.store), 1),
+                (.customImage(.fries), 0),
                 (.customImage(.burger), 2)
             ]
         }
@@ -89,7 +89,6 @@ struct SliderEmployeeNavbar: View {
             HStack(spacing: buttonSpacing) {
                 ForEach(0..<orderedButtons.count, id: \.self) { position in
                     let buttonData = orderedButtons[position]
-                    let isCenter = position == 1
                     let isSelected = buttonData.index == selectedTab
                     
                     Button(action: {
@@ -120,9 +119,9 @@ struct SliderEmployeeNavbar: View {
                             .frame(width: buttonWidth, height: buttonWidth)
                             .foregroundColor(isSelected ? .mainYellow : .gray)
                         }
-                        .scaleEffect(isSelected ? 1.1 : 1)
+                        .scaleEffect(isSelected ? 1.2 : 1)
                     }
-                    .offset(y: isSelected ? -25 : 0)
+                    .offset(y: isSelected ? -20 : 0)
                     
                 }
             }

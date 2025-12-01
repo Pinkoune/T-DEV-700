@@ -10,7 +10,7 @@ import Foundation
 class TimeEntryService {
     static let baseURL = Config.baseURL
     
-    /// Service qui gère le pointage des utilisateurs mais il faut mettre à jour le dashboard avec la liste des heures pointés. 
+    
     static func clock(userId: String) async throws -> TimeEntryResponse {
         guard let url = URL(string: "\(baseURL)/clocks") else {
             throw AuthError.invalidURL
@@ -74,6 +74,35 @@ class TimeEntryService {
         decoder.dateDecodingStrategy = .iso8601
         let activeEntry = try decoder.decode(ActiveTimeEntryResponse.self, from: data)
         return activeEntry
+    }
+    
+    static func getTimeEntries(userId: String, limit: Int = 10) async throws -> [TimeEntryResponse] {
+        guard let url = URL(string: "\(baseURL)/timeentries/by-user/\(userId)?limit=\(limit)") else {
+            throw AuthError.invalidURL
+        }
+        
+        guard let token = AuthService.getToken() else {
+            throw AuthError.unauthorized
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            throw AuthError.serverError("Erreur lors de la récupération de l'historique")
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let entries = try decoder.decode([TimeEntryResponse].self, from: data)
+        return entries
     }
 }
 
