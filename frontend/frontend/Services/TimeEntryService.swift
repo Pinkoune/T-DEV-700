@@ -10,7 +10,7 @@ import Foundation
 class TimeEntryService {
     static let baseURL = Config.baseURL
     
-    /// Service qui gère le pointage des utilisateurs mais il faut mettre à jour le dashboard avec la liste des heures pointés. 
+    
     static func clock(userId: String) async throws -> TimeEntryResponse {
         guard let url = URL(string: "\(baseURL)/clocks") else {
             throw AuthError.invalidURL
@@ -76,7 +76,6 @@ class TimeEntryService {
         return activeEntry
     }
     
-    /// Création de l'historique des pointages avec les données de la base de données. 
     static func getTimeEntries(userId: String, limit: Int = 10) async throws -> [TimeEntryResponse] {
         guard let url = URL(string: "\(baseURL)/timeentries/by-user/\(userId)?limit=\(limit)") else {
             throw AuthError.invalidURL
