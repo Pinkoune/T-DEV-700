@@ -6,6 +6,10 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'backend/**'
 
 env:
   SWIFT_VERSION: '6.1'
