@@ -8,7 +8,7 @@
 import Foundation
 
 /// Modèle TeamMember pour l'affichage des membres d'équipe
-///
+
 struct TeamMember: Identifiable, Hashable {
     let id: String
     let firstName: String
