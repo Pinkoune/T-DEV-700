@@ -28,7 +28,6 @@ struct UserController: RouteCollection {
     
 
     
-    /// GET /users - Récupère tous les utilisateurs
     func getAllUsers(req: Request) async throws -> [UserResponse] {
         let limit = req.query[Int.self, at: "limit"] ?? 100
         
@@ -39,7 +38,6 @@ struct UserController: RouteCollection {
         return users.map { UserResponse(from: $0) }
     }
     
-    /// GET /users/:userID - Récupère un utilisateur spécifique
     func getUser(req: Request) async throws -> UserResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -52,7 +50,6 @@ struct UserController: RouteCollection {
         return UserResponse(from: user)
     }
     
-    /// POST /users - Crée un nouvel utilisateur
     func createUser(req: Request) async throws -> UserResponse {
         try CreateUserRequest.validate(content: req)
         let userData = try req.content.decode(CreateUserRequest.self)
@@ -97,7 +94,6 @@ struct UserController: RouteCollection {
         
         let updateData = try req.content.decode(UpdateUserRequest.self)
         
-        // Mise à jour des champs modifiés
         if let firstName = updateData.firstName {
             user.firstName = firstName
         }

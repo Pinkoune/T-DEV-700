@@ -50,3 +50,101 @@ func randomTestEmail(prefix: String) -> String {
     let uuid = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     return "\(prefix).\(uuid)@company.com"
 }
+
+/// Helper pour créer un manager et obtenir son token
+struct ManagerContext {
+    let id: UUID
+    let token: String
+}
+
+func createManagerWithToken(app: Application, prefix: String = "manager") async throws -> ManagerContext {
+    let email = randomTestEmail(prefix: prefix)
+    let password = "StrongPass1!"
+    
+    // Register
+    var userID: UUID?
+    try await app.test(.POST, "auth/register", beforeRequest: { req in
+        try req.content.encode(RegisterRequest(
+            firstName: "Manager",
+            lastName: "Test",
+            email: email,
+            password: password,
+            phone: "0600000000",
+            department: "Management",
+            position: "Manager"
+        ))
+    }) { res async throws in
+        XCTAssertEqual(res.status, .ok)
+        let response = try res.content.decode(LoginResponse.self)
+        userID = UUID(uuidString: response.user.id!)
+    }
+    
+    // Promote to manager
+    let user = try await User.find(userID!, on: app.db)
+    user?.role = "manager"
+    try await user?.save(on: app.db)
+    
+    // Login to get token with manager role
+    var token = ""
+    try await app.test(.POST, "auth/login", beforeRequest: { req in
+        try req.content.encode(LoginRequest(email: email, password: password))
+    }) { res async throws in
+        token = try res.content.decode(LoginResponse.self).token
+    }
+    
+    return ManagerContext(id: userID!, token: token)
+}
+
+/// Helper pour créer une équipe
+func createTeam(app: Application, manager: ManagerContext, name: String? = nil) async throws -> UUID {
+    let teamName = name ?? "Team \(UUID().uuidString.prefix(8))"
+    var teamID: UUID?
+    
+    try await app.test(.POST, "teams", beforeRequest: { req in
+        req.headers.bearerAuthorization = .init(token: manager.token)
+        try req.content.encode(CreateTeamRequest(
+            name: teamName,
+            description: "Test team",
+            managerId: manager.id,
+            color: "#007AFF"
+        ))
+    }) { res async throws in
+        XCTAssertEqual(res.status, .ok)
+        teamID = try res.content.decode(TeamResponse.self).id
+    }
+    
+    return teamID!
+}
+
+/// Helper pour créer un employé
+func createEmployee(app: Application, prefix: String = "employee") async throws -> (id: UUID, token: String) {
+    let email = randomTestEmail(prefix: prefix)
+    let password = "StrongPass1!"
+    
+    var userID: UUID?
+    var token = ""
+    
+    try await app.test(.POST, "auth/register", beforeRequest: { req in
+        try req.content.encode(RegisterRequest(
+            firstName: "Employee",
+            lastName: "Test",
+            email: email,
+            password: password,
+            phone: "0600000000",
+            department: "IT",
+            position: "Developer"
+        ))
+    }) { res async throws in
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    try await app.test(.POST, "auth/login", beforeRequest: { req in
+        try req.content.encode(LoginRequest(email: email, password: password))
+    }) { res async throws in
+        let response = try res.content.decode(LoginResponse.self)
+        userID = UUID(uuidString: response.user.id!)
+        token = response.token
+    }
+    
+    return (userID!, token)
+}

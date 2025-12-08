@@ -43,7 +43,6 @@ final class TimeEntryControllerTests: XCTestCase {
     }
 }
 
-// MARK: - Helpers
 
 private func createUserWithToken(app: Application, prefix: String) async throws -> (UUID, String) {
     let registerResponse = try await registerUser(app: app, email: randomTestEmail(prefix: prefix), password: "StrongPass1!")
