@@ -55,7 +55,7 @@ jobs:
 
   test:
     name: Test iOS App
-    runs-on: macos-latest
+    runs-on: self-hosted
     needs: build
     
     steps:
