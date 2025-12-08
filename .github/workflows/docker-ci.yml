@@ -21,7 +21,7 @@ on:
 jobs:
   validate:
     name: Validate Docker Configuration
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux ,X64]
     
     steps:
       - name: Checkout code
