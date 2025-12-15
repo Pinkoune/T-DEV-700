@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
+
 env:
   SWIFT_VERSION: '6.1'
 
@@ -18,10 +19,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install required dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y file binutils
+          sudo apt-get install -y zlib1g-dev libssl-dev libcurl4-openssl-dev
       
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
@@ -73,10 +74,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install required dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y file binutils
+          sudo apt-get install -y zlib1g-dev libssl-dev libcurl4-openssl-dev
       
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
