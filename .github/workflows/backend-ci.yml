@@ -18,6 +18,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Install required dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y file binutils
+      
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
         with:
@@ -67,6 +72,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install required dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y file binutils
       
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
