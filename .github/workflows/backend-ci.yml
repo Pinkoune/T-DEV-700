@@ -6,7 +6,6 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
-
 env:
   SWIFT_VERSION: '6.1'
 
