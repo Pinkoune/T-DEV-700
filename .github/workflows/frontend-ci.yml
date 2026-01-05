@@ -43,7 +43,7 @@ jobs:
           echo "🔨 Building iOS app..."
           xcodebuild -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -configuration Debug \
             clean build
           echo "✅ iOS build successful"
@@ -113,7 +113,7 @@ jobs:
           
           # Vérifier l'état final
           echo "📱 Final simulator state:"
-          xcrun simctl list devices | grep -A 5 "iPhone 16"
+          xcrun simctl list devices | grep -A 5 "iPhone 17"
 
       - name: Run Unit Tests Only
         working-directory: frontend
@@ -127,7 +127,7 @@ jobs:
           xcodebuild test \
             -project frontend.xcodeproj \
             -scheme frontend \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -only-testing:frontendTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults \
