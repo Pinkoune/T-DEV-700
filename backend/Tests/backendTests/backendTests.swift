@@ -17,6 +17,7 @@ final class AppTests: XCTestCase {
 func withTestApp(_ test: (Application) async throws -> Void) async throws {
     let app = try await Application.make(.testing)
     try await configure(app)
+    try await app.autoMigrate()
     do {
         try await test(app)
     } catch {
