@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     name: Build iOS App
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS , ARM64]
     
     steps:
       - name: Checkout code
@@ -55,7 +55,7 @@ jobs:
 
   test:
     name: Test iOS App
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS , ARM64]
     needs: build
     
     steps:
