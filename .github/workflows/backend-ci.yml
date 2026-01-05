@@ -6,17 +6,23 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
+
 env:
   SWIFT_VERSION: '6.1'
 
 jobs:
   build:
     name: Build Backend
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zlib1g-dev libssl-dev libcurl4-openssl-dev
       
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
@@ -46,7 +52,7 @@ jobs:
 
   test:
     name: Test Backend
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
     needs: build
     
     services:
@@ -67,6 +73,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zlib1g-dev libssl-dev libcurl4-openssl-dev
       
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
@@ -116,3 +127,4 @@ jobs:
         with:
           name: backend-test-results
           path: backend/.build/debug/*.xctest
+          
