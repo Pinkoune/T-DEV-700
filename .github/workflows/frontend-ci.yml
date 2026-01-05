@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     name: Build iOS App
-    runs-on: [self-hosted, macOS , ARM64]
+    runs-on: [self-hosted, macOS]
 
     steps:
       - name: Checkout code
@@ -57,7 +57,7 @@ jobs:
 
   test:
     name: Test iOS App
-    runs-on: [self-hosted, macOS , ARM64]
+    runs-on: [self-hosted, macOS]
     needs: build
     timeout-minutes: 45
 
