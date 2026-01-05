@@ -15,8 +15,8 @@ struct PersonalInfoSpace: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            InfoRow(label: "Prénom : ", value: firstName)
-            InfoRow(label: "Nom : ", value: lastName)
+            PersonalInfoRow(label: "Prénom : ", value: firstName)
+            PersonalInfoRow(label: "Nom : ", value: lastName)
             
             ActionButton(title: "Modifier", action: onEditProfile)
             
@@ -40,7 +40,7 @@ struct PersonalInfoSpace: View {
     }
 }
 
-struct InfoRow: View {
+struct PersonalInfoRow: View {
     let label: String
     let value: String
     
