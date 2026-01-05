@@ -57,7 +57,8 @@ jobs:
     name: Test iOS App
     runs-on: [self-hosted, macOS , ARM64]
     needs: build
-    
+    timeout-minutes: 45
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,6 +68,7 @@ jobs:
       
       - name: Run Tests
         working-directory: frontend
+        timeout-minutes: 30
         run: |
           echo "Running iOS tests..."
           xcodebuild test \
