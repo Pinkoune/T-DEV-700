@@ -25,6 +25,7 @@ struct TeamController: RouteCollection {
             team.post("members", ":userID", use: addMember)
             team.delete("members", ":userID", use: removeMember)
 
+            team.get("members", ":userID", "stats", use: getMemberStats)
             team.get("stats", use: getTeamStats)
             team.get("performance", use: getTeamPerformance)
         }
@@ -38,6 +39,68 @@ struct TeamController: RouteCollection {
         
         return teams.map { TeamResponse(from: $0) }
     }
+    
+    /// GET /teams/:teamID/members/:userID/stats - Stats détaillées d'un membre
+    func getMemberStats(req: Request) async throws -> TeamMemberStatsResponse {
+        guard let teamID = req.parameters.get("teamID", as: UUID.self),
+              let userID = req.parameters.get("userID", as: UUID.self) else {
+            req.logger.error("[getMemberStats] Invalid IDs")
+            throw Abort(.badRequest, reason: "ID invalide")
+        }
+        
+        guard let team = try await Team.find(teamID, on: req.db) else {
+            req.logger.error("[getMemberStats] Team not found: \(teamID)")
+            throw Abort(.notFound, reason: "Équipe non trouvée")
+        }
+        
+        req.logger.info("[getMemberStats] Checking membership for user \(userID) in team \(teamID)")
+        if !team.isMember(userID) && team.managerId != userID {
+             req.logger.error("[getMemberStats] User \(userID) is not a member of team \(teamID). Members: \(team.members)")
+             throw Abort(.notFound, reason: "Membre non trouvé dans cette équipe")
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: now)!
+        
+        let recentEntries = try await TimeEntry.query(on: req.db)
+            .filter(\.$user.$id == userID)
+            .filter(\.$createdAt >= sevenDaysAgo)
+            .all()
+        
+        let totalHours = recentEntries.reduce(0.0) { $0 + ($1.hoursWorked ?? 0.0) }
+        
+        let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
+        guard let user = try await User.find(userID, on: req.db) else {
+             req.logger.error("[getMemberStats] User profile not found: \(userID)")
+             throw Abort(.notFound)
+        }
+        
+        let monthEntries = try await TimeEntry.query(on: req.db)
+            .filter(\.$user.$id == userID)
+            .filter(\.$createdAt >= startOfMonth)
+            .all()
+        
+        var latenessCount = 0
+        for entry in monthEntries {
+            if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
+                latenessCount += 1
+            }
+        }
+        
+        let randomMock = Double(abs(userID.hashValue) % 20) + 80.0
+        
+        return TeamMemberStatsResponse(
+            userId: userID.uuidString,
+            averageWeeklyHours: totalHours,
+            latenessCount: latenessCount,
+            taskCompletionRate: randomMock
+        )
+    }
+
+    /// GET /teams/:teamID - Récupère une équipe spécifique avec détails
+
+
 
     /// GET /teams/:teamID - Récupère une équipe spécifique avec détails
     func getTeam(req: Request) async throws -> TeamDetailResponse {
@@ -452,4 +515,11 @@ struct TeamMemberPerformance: Content {
     let isManager: Bool
     let latestPerformance: Double?
     let performanceLevel: String
+}
+
+struct TeamMemberStatsResponse: Content {
+    let userId: String
+    let averageWeeklyHours: Double
+    let latenessCount: Int
+    let taskCompletionRate: Double
 }
