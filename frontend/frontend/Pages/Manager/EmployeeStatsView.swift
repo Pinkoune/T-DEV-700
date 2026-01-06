@@ -1,90 +1,117 @@
 import SwiftUI
 
 struct EmployeeStatsView: View {
-    @State var employeeName: String = "Employé"
-    @State var teamId: String
-    @State var userId: String
+    let employeeName: String
+    let teamId: String
+    let userId: String
     
-    @State var weeklyHours: Double = 0.0
-    @State var latenessCount: Int = 0
-    @State var taskRate: Double = 0.0
+    @State private var weeklyHours: Double = 0.0
+    @State private var latenessCount: Int = 0
+    @State private var taskCompletionRate: Double = 0.0
+    @State private var isLoading = true
+    @State private var errorMessage = ""
     
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    
-                    
-                    Text("Statistiques de \(employeeName)")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 20)
-                    
+        NavigationView {
+            ZStack {
+                Color.mainYellow.ignoresSafeArea()
+                
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else if !errorMessage.isEmpty {
                     VStack {
-                        Text("Heures cette semaine")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        
-                        Text("\(String(format: "%.1f", weeklyHours)) h")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundColor(.blue)
-                        
-                        Image(systemName: "clock.fill")
-                            .font(.largeTitle)
-                            .foregroundColor(.blue.opacity(0.5))
+                        Text("Erreur")
+                            .font(.title)
+                            .foregroundColor(.white)
+                        Text(errorMessage)
+                            .foregroundColor(.white)
+                            .padding()
+                        Button("Réessayer") {
+                            loadStats()
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(10)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(15)
-                    .shadow(radius: 5)
-                    .padding(.horizontal)
-                    
-                    VStack(spacing: 10) {
-                        Text("Nombre de retards (ce mois)")
-                            .font(.headline)
-                        
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(latenessCount > 0 ? .red : .green)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 20) {
                             
-                            Text("\(latenessCount)")
-                                .font(.title)
-                                .fontWeight(.bold)
+                            HStack {
+                                Text(employeeName)
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            
+                            VStack(alignment: .leading) {
+                                HStack {
+                                    Image(systemName: "clock")
+                                        .foregroundColor(.mainGreen)
+                                    Text("Heures Hebdomadaires")
+                                        .font(.headline)
+                                        .foregroundColor(.mainGreen)
+                                }
+                                .padding(.bottom, 5)
+                                
+                                Text(String(format: "%.1f h", weeklyHours))
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(.mainGreen)
+                                
+                                Text("Moyenne sur les 7 derniers jours")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white)
+                            .cornerRadius(15)
+                            .padding(.horizontal)
+                            
+                            VStack(alignment: .leading) {
+                                HStack {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundColor(latenessCount > 0 ? .red : .mainGreen)
+                                    Text("Retards (Ce mois)")
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.bottom, 5)
+                                
+                                Text("\(latenessCount)")
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(latenessCount > 0 ? .red : .mainGreen)
+                                
+                                Text("Nombre de fois arrivé après l'heure prévue")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white)
+                            .cornerRadius(15)
+                            .padding(.horizontal)
+                            
+                            Spacer()
                         }
-                        
-                        if latenessCount == 0 {
-                            Text("Parfait ! Continuez comme ça.")
-                                .foregroundColor(.green)
-                                .font(.caption)
-                        } else {
-                            Text("Attention à la ponctualité.")
-                                .foregroundColor(.red)
-                                .font(.caption)
-                        }
+                        .padding(.top)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(15)
-                    .shadow(radius: 5)
-                    .padding(.horizontal)
-                    
-                    
-
-                    
-                    Spacer()
                 }
             }
-            .navigationTitle("Détails")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Fermer") {
+                    Button(action: {
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.white)
+                            .font(.title2)
                     }
                 }
             }
@@ -95,22 +122,27 @@ struct EmployeeStatsView: View {
     }
     
     func loadStats() {
+        isLoading = true
+        errorMessage = ""
+        
         Task {
             do {
                 print("Chargement des stats pour user \(userId) team \(teamId)")
                 let stats = try await TeamService.getMemberStats(teamId: teamId, userId: userId)
                 
-                self.weeklyHours = stats.averageWeeklyHours
-                self.latenessCount = stats.latenessCount
-                self.taskRate = stats.taskCompletionRate
-                
+                await MainActor.run {
+                    self.weeklyHours = stats.averageWeeklyHours
+                    self.latenessCount = stats.latenessCount
+                    self.taskCompletionRate = stats.taskCompletionRate
+                    self.isLoading = false
+                }
             } catch {
                 print("Erreur: \(error)")
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
             }
         }
     }
-}
-
-#Preview {
-    EmployeeStatsView(employeeName: "Test", teamId: "test", userId: "456")
 }
