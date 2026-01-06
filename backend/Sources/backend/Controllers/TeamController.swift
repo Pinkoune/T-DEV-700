@@ -99,10 +99,6 @@ struct TeamController: RouteCollection {
     }
 
     /// GET /teams/:teamID - Récupère une équipe spécifique avec détails
-
-
-
-    /// GET /teams/:teamID - Récupère une équipe spécifique avec détails
     func getTeam(req: Request) async throws -> TeamDetailResponse {
         guard let teamID = req.parameters.get("teamID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID équipe invalide")
@@ -119,7 +115,6 @@ struct TeamController: RouteCollection {
             }
         }
 
-        // Pareil que pour les membres sauf qu'ici on récupère les détails concernant le manager de l'équipe.
         let manager = try await User.find(team.managerId, on: req.db)
 
         return TeamDetailResponse(

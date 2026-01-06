@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 
-/// Modèle Team pour l'affichage dans l'application
 
 struct Team: Identifiable, Hashable {
     let id: String
@@ -40,7 +39,6 @@ struct Team: Identifiable, Hashable {
         }
     }
     
-    /// Initialisation depuis TeamResponse
     init(from response: TeamResponse) {
         self.id = response.id ?? UUID().uuidString
         self.name = response.name
@@ -55,7 +53,6 @@ struct Team: Identifiable, Hashable {
         self.updatedAt = response.updatedAt
     }
     
-    /// Initialisation manuelle
     init(
         id: String = UUID().uuidString,
         name: String,
@@ -83,7 +80,6 @@ struct Team: Identifiable, Hashable {
     }
 }
 
-// MARK: - Mock Data (pour les previews)
 
 extension Team {
     static let sampleTeams = [
@@ -145,7 +141,6 @@ extension Team {
     ]
 }
 
-// MARK: - Color Extension
 
 extension Color {
     init?(hex: String) {
@@ -166,7 +161,6 @@ extension Color {
     }
 }
 
-// MARK: - Predefined Colors for Teams
 
 struct TeamColors {
     static let available: [(name: String, hex: String)] = [

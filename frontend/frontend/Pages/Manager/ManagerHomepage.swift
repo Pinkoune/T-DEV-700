@@ -1,10 +1,3 @@
-//
-//  ManagerHomepage.swift MAJ
-//  Frontend
-//
-//  David
-//
-
 import SwiftUI
 
 struct ManagerHomePage: View {

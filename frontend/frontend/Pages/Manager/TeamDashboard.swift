@@ -1,10 +1,3 @@
-//
-//  TeamDashboard.swift MAJ
-//  Frontend
-//
-//  David
-//
-
 import SwiftUI
 
 struct TeamDashboard: View {
