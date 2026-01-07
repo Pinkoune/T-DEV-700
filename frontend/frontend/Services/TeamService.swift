@@ -285,7 +285,6 @@ class TeamService {
         }
     }
     
-    // MARK: - Remove Member from Team
     
     static func removeMember(teamId: String, userId: String) async throws {
         guard let url = URL(string: "\(baseURL)/\(teamId)/members/\(userId)") else {
@@ -314,7 +313,6 @@ class TeamService {
         }
     }
     
-    // MARK: - Get Team Stats
     
     static func getTeamStats(teamId: String) async throws -> TeamStatsResponse {
         guard let url = URL(string: "\(baseURL)/\(teamId)/stats") else {
@@ -345,7 +343,6 @@ class TeamService {
         return try JSONDecoder().decode(TeamStatsResponse.self, from: data)
     }
     
-    // MARK: - Get Team Performance
     
     static func getTeamPerformance(teamId: String) async throws -> [TeamMemberPerformance] {
         guard let url = URL(string: "\(baseURL)/\(teamId)/performance") else {
@@ -376,7 +373,6 @@ class TeamService {
         return try JSONDecoder().decode([TeamMemberPerformance].self, from: data)
     }
     
-    // MARK: - Search Teams
     
     static func searchTeams(query: String) async throws -> [TeamResponse] {
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
@@ -410,7 +406,6 @@ class TeamService {
         return try decoder.decode([TeamResponse].self, from: data)
     }
     
-    // MARK: - Get Active Teams
     
     static func getActiveTeams() async throws -> [TeamResponse] {
         guard let url = URL(string: "\(baseURL)/active") else {
@@ -443,7 +438,6 @@ class TeamService {
         return try decoder.decode([TeamResponse].self, from: data)
     }
     
-    // MARK: - Get All Users (for adding members)
     
     static func getAllUsers() async throws -> [TeamMemberResponse] {
         guard let url = URL(string: "\(Config.baseURL)/users") else {
@@ -476,7 +470,6 @@ class TeamService {
         return try decoder.decode([TeamMemberResponse].self, from: data)
     }
     
-    // MARK: - Get Member Stats
     
     static func getMemberStats(teamId: String, userId: String) async throws -> TeamMemberStatsResponse {
         guard let url = URL(string: "\(baseURL)/\(teamId)/members/\(userId)/stats") else {
@@ -508,7 +501,6 @@ class TeamService {
     }
 }
 
-// MARK: - Request Models
 
 struct CreateTeamRequest: Codable {
     let name: String
@@ -525,7 +517,6 @@ struct UpdateTeamRequest: Codable {
     let isActive: Bool?
 }
 
-// MARK: - Response Models
 
 struct TeamResponse: Codable, Identifiable, Hashable {
     let id: String?
@@ -598,6 +589,14 @@ struct TeamMemberStatsResponse: Codable {
     let averageWeeklyHours: Double
     let latenessCount: Int
     let taskCompletionRate: Double
+    let lastSevenDays: [DailyStats]?
+}
+
+struct DailyStats: Codable, Identifiable {
+    let date: String
+    let hours: Double
+    
+    var id: String { date }
 }
 
 struct TeamMemberPerformance: Codable, Identifiable {
