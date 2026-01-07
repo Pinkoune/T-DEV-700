@@ -49,52 +49,62 @@ struct EmployeeStatsView: View {
                             }
                             .padding(.horizontal)
                             
+                            // Card 1: Heures Hebdomadaires
                             VStack(alignment: .leading) {
                                 HStack {
                                     Image(systemName: "clock")
-                                        .foregroundColor(.mainGreen)
+                                        .foregroundColor(.white)
                                     Text("Heures Hebdomadaires")
                                         .font(.headline)
-                                        .foregroundColor(.mainGreen)
+                                        .foregroundColor(.white)
                                 }
                                 .padding(.bottom, 5)
                                 
                                 Text(String(format: "%.1f h", weeklyHours))
                                     .font(.system(size: 40, weight: .bold))
-                                    .foregroundColor(.mainGreen)
+                                    .foregroundColor(.white)
                                 
                                 Text("Moyenne sur les 7 derniers jours")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.white.opacity(0.8))
                             }
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
-                            .cornerRadius(15)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(
+                                        LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
+                                    )
+                            )
                             .padding(.horizontal)
                             
+                            // Card 2: Retards
                             VStack(alignment: .leading) {
                                 HStack {
                                     Image(systemName: "exclamationmark.triangle")
-                                        .foregroundColor(latenessCount > 0 ? .red : .mainGreen)
+                                        .foregroundColor(.white)
                                     Text("Retards (Ce mois)")
                                         .font(.headline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.white)
                                 }
                                 .padding(.bottom, 5)
                                 
                                 Text("\(latenessCount)")
                                     .font(.system(size: 40, weight: .bold))
-                                    .foregroundColor(latenessCount > 0 ? .red : .mainGreen)
+                                    .foregroundColor(.white)
                                 
                                 Text("Nombre de fois arrivé après l'heure prévue")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.white.opacity(0.8))
                             }
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
-                            .cornerRadius(15)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(
+                                        LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
+                                    )
+                            )
                             .padding(.horizontal)
                             
                             Spacer()
