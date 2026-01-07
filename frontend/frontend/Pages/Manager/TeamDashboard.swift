@@ -1,10 +1,3 @@
-//
-//  TeamDashboard.swift MAJ
-//  Frontend
-//
-//  David
-//
-
 import SwiftUI
 
 struct TeamDashboard: View {
@@ -16,6 +9,8 @@ struct TeamDashboard: View {
     @State private var errorMessage = ""
     @State private var showError = false
     @State private var showingTeamStats = false
+    @State private var showEditSheet = false
+    @State private var selectedMember: TeamMember?
     @State private var showEditTeam = false
     @State private var showManageMembers = false
     @State private var currentTeam: Team
@@ -143,6 +138,10 @@ struct TeamDashboard: View {
                                         member: member,
                                         isManager: member.id == currentTeam.managerId
                                     )
+                                    .onTapGesture {
+                                        print("Employé sélectionné: \(member.fullName)")
+                                        self.selectedMember = member
+                                    }
                                 }
                             }
                             .padding(.vertical)
@@ -164,12 +163,34 @@ struct TeamDashboard: View {
         .sheet(isPresented: $showingTeamStats) {
             StatsTeam(team: currentTeam, stats: stats)
         }
+        .sheet(isPresented: $showEditSheet, onDismiss: {
+            Task {
+                loadTeamData()
+            }
+        }) {
+            TeamManagementView(team: team, onSave: {
+                Task {
+                   loadTeamData()
+                }
+            })
+        }
+        .sheet(item: $selectedMember) { member in
+            EmployeeStatsView(
+                employeeName: member.fullName,
+                teamId: currentTeam.id,
+                userId: member.id
+            )
+        }
         .sheet(isPresented: $showEditTeam) {
             EditTeamView(team: currentTeam) { updatedTeam in
                 currentTeam = Team(from: updatedTeam)
             }
         }
-        .sheet(isPresented: $showManageMembers) {
+        .sheet(isPresented: $showManageMembers, onDismiss: {
+            Task {
+               loadTeamData()
+            }
+        }) {
             TeamMembersView(team: currentTeam)
         }
         .alert("Erreur", isPresented: $showError) {
@@ -300,7 +321,6 @@ struct TeamMemberCard: View {
     }
 }
 
-// MARK: - Live Stats Card
 
 struct StatsTeamCardLive: View {
     let stats: TeamStatsResponse

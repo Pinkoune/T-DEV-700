@@ -1,10 +1,3 @@
-//
-//  TimeEntryService.swift
-//  frontend
-//
-//  Created by Mathieu Exposito on 23/10/2025.
-//
-
 import Foundation
 
 class TimeEntryService {

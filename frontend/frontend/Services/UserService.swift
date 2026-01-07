@@ -1,10 +1,3 @@
-//
-//  UserService.swift
-//  frontend
-//
-//  Created by Mathieu Expositp on 24/10/2025.
-//
-
 import Foundation
 
 class UserService {

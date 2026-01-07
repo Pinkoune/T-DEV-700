@@ -475,6 +475,37 @@ class TeamService {
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode([TeamMemberResponse].self, from: data)
     }
+    
+    // MARK: - Get Member Stats
+    
+    static func getMemberStats(teamId: String, userId: String) async throws -> TeamMemberStatsResponse {
+        guard let url = URL(string: "\(baseURL)/\(teamId)/members/\(userId)/stats") else {
+            throw TeamError.invalidURL
+        }
+        
+        guard let token = AuthService.getToken() else {
+            throw TeamError.unauthorized
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw TeamError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw TeamError.serverError(errorResponse.reason ?? "Erreur serveur")
+            }
+            throw TeamError.serverError("Erreur lors de la récupération des stats membre")
+        }
+        
+        return try JSONDecoder().decode(TeamMemberStatsResponse.self, from: data)
+    }
 }
 
 // MARK: - Request Models
@@ -560,6 +591,13 @@ struct TeamStatsResponse: Codable {
     let latenessRate: Double
     let totalLateEntries: Int
     let averageLateMinutes: Double
+}
+
+struct TeamMemberStatsResponse: Codable {
+    let userId: String
+    let averageWeeklyHours: Double
+    let latenessCount: Int
+    let taskCompletionRate: Double
 }
 
 struct TeamMemberPerformance: Codable, Identifiable {

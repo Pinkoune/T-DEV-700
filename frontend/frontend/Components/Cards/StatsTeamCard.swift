@@ -11,7 +11,6 @@ struct StatsTeamCard: View {
                     .foregroundColor(.white)
                     .padding(.top, 20)
                     .padding(.leading, 30)
-//                    .padding(30)
                 Spacer()
             }
             
@@ -53,12 +52,6 @@ struct StatsTeamCard: View {
                     LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
                 )
         )
-//        .shadow(
-//            color: .white.opacity(0.15),
-//            radius: 8,
-//            x: 0,
-//            y: 4
-//        )
     }
 
 }
