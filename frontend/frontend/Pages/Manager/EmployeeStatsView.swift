@@ -49,7 +49,6 @@ struct EmployeeStatsView: View {
                             }
                             .padding(.horizontal)
                             
-                            // Card 1: Heures Hebdomadaires
                             VStack(alignment: .leading) {
                                 HStack {
                                     Image(systemName: "clock")
@@ -78,7 +77,6 @@ struct EmployeeStatsView: View {
                             )
                             .padding(.horizontal)
                             
-                            // Card 2: Retards
                             VStack(alignment: .leading) {
                                 HStack {
                                     Image(systemName: "exclamationmark.triangle")
