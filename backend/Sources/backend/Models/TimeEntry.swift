@@ -71,18 +71,41 @@ final class TimeEntry: Model, Content, @unchecked Sendable {
 		}
 	}
 	
-	func isLate(expectedArrivalTime: String) -> Bool {
-		guard let expectedTime = parseTime(expectedArrivalTime) else { return false }
-		let actualTime = getTimeComponents(from: arrival)
-		return actualTime > expectedTime
-	}
-	
-	func lateMinutes(expectedArrivalTime: String) -> Int {
-		guard let expectedTime = parseTime(expectedArrivalTime) else { return 0 }
-		let actualTime = getTimeComponents(from: arrival)
-		let diff = actualTime - expectedTime
-		return max(0, diff)
-	}
+    func isLate(expectedArrivalTime: String) -> Bool {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: arrival)
+        
+        if hour < 12 {
+            guard let expectedTime = parseTime(expectedArrivalTime) else { return false }
+            let actualTime = getTimeComponents(from: arrival)
+            return actualTime > expectedTime
+        } 
+        else if hour >= 12 {
+            guard let expectedAfternoon = parseTime("13:00") else { return false }
+            let actualTime = getTimeComponents(from: arrival)
+            return actualTime > expectedAfternoon
+        }
+        
+        return false
+    }
+    
+    func lateMinutes(expectedArrivalTime: String) -> Int {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: arrival)
+        
+        var targetTime: Int?
+        
+        if hour < 12 {
+            targetTime = parseTime(expectedArrivalTime)
+        } else if hour >= 12 {
+            targetTime = parseTime("13:00")
+        }
+        
+        guard let expected = targetTime else { return 0 }
+        let actualTime = getTimeComponents(from: arrival)
+        let diff = actualTime - expected
+        return max(0, diff)
+    }
 	
 	private func parseTime(_ timeString: String) -> Int? {
 		let components = timeString.split(separator: ":").compactMap { Int($0) }

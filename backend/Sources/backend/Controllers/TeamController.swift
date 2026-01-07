@@ -90,11 +90,29 @@ struct TeamController: RouteCollection {
         
         let randomMock = Double(abs(userID.hashValue) % 20) + 80.0
         
+        var dailyStats: [DailyStats] = []
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd/MM"
+        
+        for i in 0..<7 {
+            guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+            let dayStart = calendar.startOfDay(for: date)
+            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            
+            let hoursForDay = recentEntries.filter {
+                guard let createdAt = $0.createdAt else { return false }
+                return createdAt >= dayStart && createdAt < dayEnd
+            }.reduce(0.0) { $0 + ($1.hoursWorked ?? 0.0) }
+            
+            dailyStats.insert(DailyStats(date: dateFormatter.string(from: date), hours: hoursForDay), at: 0)
+        }
+        
         return TeamMemberStatsResponse(
             userId: userID.uuidString,
             averageWeeklyHours: totalHours,
             latenessCount: latenessCount,
-            taskCompletionRate: randomMock
+            taskCompletionRate: randomMock,
+            lastSevenDays: dailyStats
         )
     }
 
@@ -517,4 +535,10 @@ struct TeamMemberStatsResponse: Content {
     let averageWeeklyHours: Double
     let latenessCount: Int
     let taskCompletionRate: Double
+    let lastSevenDays: [DailyStats]
+}
+
+struct DailyStats: Content {
+    let date: String
+    let hours: Double
 }

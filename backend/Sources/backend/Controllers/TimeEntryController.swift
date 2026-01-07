@@ -197,6 +197,13 @@ struct TimeEntryController: RouteCollection {
     func clock(req: Request) async throws -> TimeEntryResponse {
         let clockData = try req.content.decode(ClockRequest.self)
         
+        let calendar = Calendar.current
+        let now = Date()
+        let hour = calendar.component(.hour, from: now)
+        if hour == 12 {
+            throw Abort(.forbidden, reason: "Impossible de pointer entre 12h et 13h (Pause déjeuner)")
+        }
+        
         guard let _ = try await User.find(clockData.userId, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
