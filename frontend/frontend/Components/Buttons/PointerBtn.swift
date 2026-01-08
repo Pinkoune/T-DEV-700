@@ -24,7 +24,7 @@ struct PointerBtn: View {
     @State private var showConfirmation = false
 
     var body: some View {
-        Zstack {
+        ZStack {
             VStack(spacing: 12) {
                 Button(action: {
                     showConfirmation = true
