@@ -294,7 +294,6 @@ struct GlobalStatsResponse: Content, WithExample {
             activeUsers: 42,
             activeTeams: 5,
             currentlyWorking: 28,
-            performancesThisMonth: 156,
             timestamp: Date()
         )
     }
@@ -315,7 +314,6 @@ struct ReportsResponse: Content, WithExample {
             activeTeams: 5,
             currentlyWorking: 28,
             totalHoursThisMonth: 1250.5,
-            averagePerformance: 85.3,
             totalTimeEntries: 892,
             period: "month",
             generatedAt: Date()

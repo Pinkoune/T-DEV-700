@@ -296,6 +296,10 @@ struct MemberRow: View {
                 Text(member.email)
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.5))
+                
+                Text(member.phone)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.5))
             }
             
             Spacer()

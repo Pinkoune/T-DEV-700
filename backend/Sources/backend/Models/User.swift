@@ -53,8 +53,7 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	@Children(for: \.$user)
 	var timeEntries: [TimeEntry]
 	
-	@Children(for: \.$user)
-	var performances: [Performance]
+
 	
 	var fullName: String {
 		return "\(firstName) \(lastName)"

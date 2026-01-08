@@ -19,16 +19,18 @@ struct PointerBtn: View {
     @State private var showError = false
     @State private var showSuccess = false
     
+    @State private var showConfirmation = false
+    
     var body: some View {
         VStack(spacing: 12) {
             Button(action: {
-                handleClock()
+                showConfirmation = true
             }) {
                 VStack(spacing: 4) {
                     Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
                         .font(.custom("McDonaldsHelvetica", size: 20))
                         .foregroundColor(.white)
-                    Text(hasActiveEntry ? "(Pointer la fin du journée)" : "(Pointer le début du journée)")
+                    Text(hasActiveEntry ? "(Pointer la fin de journée)" : "(Pointer le début de journée)")
                         .font(.system(size: 12))
                         .foregroundColor(.mainGreen.opacity(0.9))
                 }
@@ -36,10 +38,24 @@ struct PointerBtn: View {
                 .frame(height: 60)
                 .background(
                     RoundedRectangle(cornerRadius: 30)
-                        .fill(isLoading ? Color.gray : Color.mainYellow)
+                        .fill(isButtonBlocked() ? Color.gray : (isLoading ? Color.gray : Color.mainYellow))
                 )
             }
-            .disabled(isLoading)
+            .disabled(isLoading || isButtonBlocked())
+            .alert("Confirmation", isPresented: $showConfirmation) {
+                Button("Annuler", role: .cancel) { }
+                Button("Oui, je confirme") {
+                    handleClock()
+                }
+            } message: {
+                Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?" : "Voulez-vous vraiment pointer ?")
+            }
+            
+            if isButtonBlocked() {
+                Text(getBlockMessage())
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.7))
+            }
             
             if showError && !errorMessage.isEmpty {
                 Text(errorMessage)
@@ -62,6 +78,46 @@ struct PointerBtn: View {
         .onAppear {
             setupAudioPlayer()
         }
+    }
+    
+
+    private func isButtonBlocked() -> Bool {
+        let date = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        
+        if hasActiveEntry {
+            
+            if hour < 11 {
+                return true
+            }
+            if hour == 11 && minute < 30 {
+                return true
+            }
+            
+            if hour >= 13 && hour < 16 {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    private func getBlockMessage() -> String {
+        let date = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        
+        if hasActiveEntry {
+            if hour < 12 {
+                return "Départ bloqué avant 11h30"
+            }
+            if hour >= 13 {
+                return "Départ bloqué avant 16h00"
+            }
+        }
+        return ""
     }
     
     private func setupAudioPlayer() {
