@@ -8,6 +8,7 @@ struct EmployeeStatsView: View {
     
     @State private var weeklyHours: Double = 0.0
     @State private var latenessCount: Int = 0
+    @State private var averageLateMinutes: Double = 0.0
     @State private var taskCompletionRate: Double = 0.0
     @State private var dailyStats: [DailyStats] = []
     @State private var isLoading = true
@@ -109,6 +110,34 @@ struct EmployeeStatsView: View {
                             
                             VStack(alignment: .leading) {
                                 HStack {
+                                    Image(systemName: "timer")
+                                        .foregroundColor(.white)
+                                    Text("Retard moyen")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.bottom, 5)
+                                
+                                Text(String(format: "%.0f min", averageLateMinutes))
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(.white)
+                                
+                                Text("Durée moyenne des retards constatés")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(
+                                        LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
+                                    )
+                            )
+                            .padding(.horizontal)
+                            
+                            VStack(alignment: .leading) {
+                                HStack {
                                     Image(systemName: "chart.bar.xaxis")
                                         .foregroundColor(.white)
                                     Text("Évolution (7 jours)")
@@ -187,6 +216,7 @@ struct EmployeeStatsView: View {
                 await MainActor.run {
                     self.weeklyHours = stats.averageWeeklyHours
                     self.latenessCount = stats.latenessCount
+                    self.averageLateMinutes = stats.averageLateMinutes
                     self.taskCompletionRate = stats.taskCompletionRate
                     self.dailyStats = stats.lastSevenDays ?? []
                     self.isLoading = false

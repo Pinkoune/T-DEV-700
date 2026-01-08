@@ -16,7 +16,6 @@ struct TeamDetailView: View {
     @State private var members: [TeamMember] = []
     @State private var manager: TeamMember?
     @State private var stats: TeamStatsResponse?
-    @State private var performances: [TeamMemberPerformance] = []
     
     @State private var isLoading = true
     @State private var errorMessage = ""
@@ -110,23 +109,6 @@ struct TeamDetailView: View {
                             }
                             
 
-                            if !performances.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Performance de l'équipe")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                    
-                                    ForEach(performances.prefix(5)) { perf in
-                                        PerformanceRow(performance: perf)
-                                    }
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.mainGreen.opacity(0.3))
-                                )
-                                .padding(.horizontal, 20)
-                            }
                             
                             Spacer(minLength: 50)
                         }
@@ -199,7 +181,7 @@ struct TeamDetailView: View {
             }
             .sheet(isPresented: $showStats) {
                 if let team = team {
-                    StatsTeamDetailView(team: team, stats: stats, performances: performances)
+                    StatsTeamDetailView(team: team, stats: stats)
                 }
             }
             .alert("Erreur", isPresented: $showError) {
@@ -218,10 +200,7 @@ struct TeamDetailView: View {
                 let detail = try await TeamService.getTeam(id: teamId)
                 
 
-                async let statsTask = TeamService.getTeamStats(teamId: teamId)
-                async let perfTask = TeamService.getTeamPerformance(teamId: teamId)
-                
-                let (fetchedStats, fetchedPerf) = try await (statsTask, perfTask)
+                let fetchedStats = try await TeamService.getTeamStats(teamId: teamId)
                 
                 await MainActor.run {
                     team = Team(from: detail.team)
@@ -230,7 +209,6 @@ struct TeamDetailView: View {
                         manager = TeamMember(from: managerResponse)
                     }
                     stats = fetchedStats
-                    performances = fetchedPerf
                     isLoading = false
                 }
             } catch {
@@ -247,7 +225,6 @@ struct TeamDetailView: View {
         do {
             let detail = try await TeamService.getTeam(id: teamId)
             let fetchedStats = try await TeamService.getTeamStats(teamId: teamId)
-            let fetchedPerf = try await TeamService.getTeamPerformance(teamId: teamId)
             
             await MainActor.run {
                 team = Team(from: detail.team)
@@ -256,7 +233,6 @@ struct TeamDetailView: View {
                     manager = TeamMember(from: managerResponse)
                 }
                 stats = fetchedStats
-                performances = fetchedPerf
             }
         } catch {
             await MainActor.run {
@@ -267,7 +243,6 @@ struct TeamDetailView: View {
     }
 }
 
-// MARK: - Team Header Card
 
 struct TeamHeaderCard: View {
     let team: Team
@@ -340,29 +315,13 @@ struct TeamHeaderCard: View {
     }
 }
 
-// MARK: - Quick Stats Card
-
 struct QuickStatsCard: View {
     let stats: TeamStatsResponse
     
     var body: some View {
         HStack(spacing: 0) {
             StatItem(value: "\(stats.totalMembers)", label: "Membres", icon: "person.fill")
-            
-            Divider()
-                .frame(height: 40)
-                .background(Color.white.opacity(0.3))
-            
-            StatItem(
-                value: String(format: "%.0f%%", stats.averagePerformance),
-                label: "Performance",
-                icon: "chart.line.uptrend.xyaxis"
-            )
-            
-            Divider()
-                .frame(height: 40)
-                .background(Color.white.opacity(0.3))
-            
+                        
             StatItem(
                 value: String(format: "%.0f%%", stats.latenessRate),
                 label: "Retards",
@@ -400,8 +359,6 @@ struct StatItem: View {
         .frame(maxWidth: .infinity)
     }
 }
-
-// MARK: - Action Row
 
 struct ActionRow: View {
     let icon: String
@@ -448,8 +405,6 @@ struct ActionRow: View {
     }
 }
 
-// MARK: - Member Preview Row
-
 struct MemberPreviewRow: View {
     let member: TeamMember
     let isManager: Bool
@@ -493,64 +448,10 @@ struct MemberPreviewRow: View {
     }
 }
 
-// MARK: - Performance Row
-
-struct PerformanceRow: View {
-    let performance: TeamMemberPerformance
-    
-    var performanceColor: Color {
-        guard let perf = performance.latestPerformance else { return .gray }
-        switch perf {
-        case 90...100: return .green
-        case 75..<90: return .blue
-        case 60..<75: return .yellow
-        case 40..<60: return .orange
-        default: return .red
-        }
-    }
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(performance.userName)
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                    
-                    if performance.isManager {
-                        Image(systemName: "crown.fill")
-                            .font(.caption2)
-                            .foregroundColor(.mainYellow)
-                    }
-                }
-                
-                Text(performance.performanceLevel)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.6))
-            }
-            
-            Spacer()
-            
-            if let perf = performance.latestPerformance {
-                Text(String(format: "%.0f%%", perf))
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(performanceColor)
-            } else {
-                Text("N/A")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
-            }
-        }
-    }
-}
-
-// MARK: - Stats Team Detail View (Sheet)
-
 struct StatsTeamDetailView: View {
     let team: Team
     let stats: TeamStatsResponse?
-    let performances: [TeamMemberPerformance]
+
     
     @Environment(\.dismiss) var dismiss
     
@@ -562,15 +463,7 @@ struct StatsTeamDetailView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        if let stats = stats {
-
-                            StatCard(
-                                title: "Performance moyenne",
-                                value: String(format: "%.1f%%", stats.averagePerformance),
-                                icon: "chart.line.uptrend.xyaxis",
-                                trend: stats.averagePerformance >= 75 ? .up : stats.averagePerformance >= 50 ? .neutral : .down
-                            )
-                            
+                        if let stats = stats {                            
 
                             StatCard(
                                 title: "Membres actifs",
@@ -641,20 +534,6 @@ struct StatsTeamDetailView: View {
                             .padding(.horizontal, 15)
                         }
                         
-
-                        if !performances.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Performance individuelle")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 15)
-                                
-                                ForEach(performances) { perf in
-                                    PerformanceDetailRow(performance: perf)
-                                        .padding(.horizontal, 15)
-                                }
-                            }
-                        }
                     }
                     .padding(.vertical, 20)
                 }
@@ -675,73 +554,6 @@ struct StatsTeamDetailView: View {
         }
     }
 }
-
-struct PerformanceDetailRow: View {
-    let performance: TeamMemberPerformance
-    
-    var performanceColor: Color {
-        guard let perf = performance.latestPerformance else { return .gray }
-        switch perf {
-        case 90...100: return .green
-        case 75..<90: return .blue
-        case 60..<75: return .yellow
-        case 40..<60: return .orange
-        default: return .red
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-
-            ZStack {
-                Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 4)
-                    .frame(width: 50, height: 50)
-                
-                Circle()
-                    .trim(from: 0, to: CGFloat((performance.latestPerformance ?? 0) / 100))
-                    .stroke(performanceColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 50, height: 50)
-                    .rotationEffect(.degrees(-90))
-                
-                if let perf = performance.latestPerformance {
-                    Text(String(format: "%.0f", perf))
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(performance.userName)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
-                    if performance.isManager {
-                        Image(systemName: "crown.fill")
-                            .font(.caption)
-                            .foregroundColor(.mainYellow)
-                    }
-                }
-                
-                Text(performance.performanceLevel)
-                    .font(.subheadline)
-                    .foregroundColor(performanceColor)
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.mainGreen)
-        )
-    }
-}
-
-// MARK: - Preview
-
 #Preview {
     TeamDetailView(teamId: "1")
 }

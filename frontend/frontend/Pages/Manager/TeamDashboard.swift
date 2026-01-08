@@ -334,20 +334,6 @@ struct StatsTeamCardLive: View {
                     icon: "person.fill"
                 )
                 
-                Divider()
-                    .frame(height: 40)
-                    .background(Color.white.opacity(0.3))
-                
-                StatMiniItem(
-                    value: String(format: "%.0f%%", stats.averagePerformance),
-                    label: "Performance",
-                    icon: "chart.line.uptrend.xyaxis"
-                )
-                
-                Divider()
-                    .frame(height: 40)
-                    .background(Color.white.opacity(0.3))
-                
                 StatMiniItem(
                     value: "\(stats.activeTimeEntries)",
                     label: "Actifs",
