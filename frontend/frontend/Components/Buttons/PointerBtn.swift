@@ -22,6 +22,7 @@ struct PointerBtn: View {
     @State private var pointsOpacity = 0.0
     @State private var pointsYOffset: CGFloat = 0
     @State private var showConfirmation = false
+    @State private var isTemporarilyBlocked = false
 
     var body: some View {
         ZStack {
@@ -69,11 +70,16 @@ struct PointerBtn: View {
         }
         .onAppear {
             setupAudioPlayer()
+            checkCooldown()
         }
     }
     
 
     private func isButtonBlocked() -> Bool {
+        if isTemporarilyBlocked {
+            return true
+        }
+
         let date = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: date)
@@ -91,12 +97,20 @@ struct PointerBtn: View {
             if hour >= 13 && hour < 16 {
                 return true
             }
+        } else {
+            if hour >= 12 && hour < 13 {
+                return true
+            }
         }
 
         return false
     }
 
     private func getBlockMessage() -> String {
+        if isTemporarilyBlocked {
+            return "Veuillez patienter 10 secondes..."
+        }
+
         let date = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: date)
@@ -107,6 +121,10 @@ struct PointerBtn: View {
             }
             if hour >= 13 {
                 return "Départ bloqué avant 16h00"
+            }
+        } else {
+            if hour >= 12 && hour < 13 {
+                 return "Retour bloqué avant 13h00"
             }
         }
         return ""
@@ -129,6 +147,18 @@ struct PointerBtn: View {
     private func playSound() {
         audioPlayer?.play()
     }
+    
+    private func checkCooldown() {
+        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime") as? Date {
+            let timePassed = Date().timeIntervalSince(lastClock)
+            if timePassed < 10 {
+                isTemporarilyBlocked = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + (10 - timePassed)) {
+                    isTemporarilyBlocked = false
+                }
+            }
+        }
+    }
 
     private func handleClock() {
         showError = false
@@ -146,6 +176,11 @@ struct PointerBtn: View {
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
+                    UserDefaults.standard.set(Date(), forKey: "lastClockTime")
+                    isTemporarilyBlocked = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                        isTemporarilyBlocked = false
+                    }
 
                     withAnimation(.easeOut(duration: 0.0)) {
                         showPointsAnimation = true
