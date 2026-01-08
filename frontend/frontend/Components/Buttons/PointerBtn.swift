@@ -86,18 +86,21 @@ struct PointerBtn: View {
         let minute = calendar.component(.minute, from: date)
 
         if hasActiveEntry {
-
-            if hour < 11 {
-                return true
-            }
-            if hour == 11 && minute < 30 {
-                return true
-            }
-
-            if hour >= 13 && hour < 16 {
-                return true
-            }
         } else {
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+                if calendar.isDateInToday(lastClockOut) {
+                    let lastOutHour = calendar.component(.hour, from: lastClockOut)
+                    
+                    if lastOutHour < 13 && hour < 13 {
+                        return true
+                    }
+                    
+                    if lastOutHour >= 13 && hour >= 13 {
+                        return true
+                    }
+                }
+            }
+
             if hour >= 12 && hour < 13 {
                 return true
             }
@@ -116,13 +119,20 @@ struct PointerBtn: View {
         let hour = calendar.component(.hour, from: date)
 
         if hasActiveEntry {
-            if hour < 12 {
-                return "Départ bloqué avant 11h30"
-            }
-            if hour >= 13 {
-                return "Départ bloqué avant 16h00"
-            }
         } else {
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+                if calendar.isDateInToday(lastClockOut) {
+                    let lastOutHour = calendar.component(.hour, from: lastClockOut)
+                    
+                    if lastOutHour < 13 && hour < 13 {
+                        return "Matinée terminée"
+                    }
+                    if lastOutHour >= 13 && hour >= 13 {
+                        return "Journée terminée"
+                    }
+                }
+            }
+
             if hour >= 12 && hour < 13 {
                  return "Retour bloqué avant 13h00"
             }
@@ -176,7 +186,12 @@ struct PointerBtn: View {
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
+
                     UserDefaults.standard.set(Date(), forKey: "lastClockTime")
+                    if !hasActiveEntry {
+                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime")
+                    }
+
                     isTemporarilyBlocked = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
                         isTemporarilyBlocked = false
