@@ -1,0 +1,95 @@
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+// Relabeling pour filtrer les containers
+discovery.relabel "docker_containers" {
+  targets = discovery.docker.containers.targets
+
+  // Garder le nom du container
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+
+  // Extraire le nom du service depuis le label compose
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // Extraire le nom du projet compose
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+}
+
+loki.source.docker "docker_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.docker_containers.output
+  forward_to = [loki.relabel.add_labels.receiver]
+  refresh_interval = "5s"
+}
+
+// Relabeling des logs pour conserver les labels dans Loki
+loki.relabel "add_labels" {
+  forward_to = [loki.process.docker_logs.receiver]
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+}
+
+loki.process "docker_logs" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.static_labels {
+    values = {
+      job = "docker",
+    }
+  }
+}
+
+// Envoi vers Loki
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+    batch_wait = "1s"
+    batch_size = "1MiB"
+  }
+  
+  external_labels = {
+    cluster = "docker-local",
+    env     = "development",
+  }
+}
+
+logging {
+  level  = "debug"
+  format = "logfmt"
+}

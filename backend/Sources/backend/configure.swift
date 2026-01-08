@@ -5,6 +5,8 @@ import JWT
 
 // Configuration de l'application
 public func configure(_ app: Application) async throws {
+
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     // Configuration JWT
     let jwtSecret = Environment.get("JWT_SECRET") ?? "secret-key-change-in-production"
     app.jwt.signers.use(.hs256(key: [UInt8](jwtSecret.utf8)))
