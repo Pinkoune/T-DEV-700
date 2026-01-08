@@ -65,7 +65,6 @@ func routes(_ app: Application) throws {
     // MARK: - Controllers
     try app.register(collection: AuthController())
     try app.register(collection: UserController())
-    try app.register(collection: PerformanceController())
     try app.register(collection: TimeEntryController())
     try app.register(collection: TeamController())
     try app.register(collection: DashboardController())
@@ -128,18 +127,11 @@ func routes(_ app: Application) throws {
 
         let totalHoursThisMonth = completedEntries.reduce(0.0) { $0 + ($1.hoursWorked ?? 0) }
 
-        let performances = try await Performance.query(on: req.db)
-            .filter(\.$createdAt >= startOfMonth)
-            .all()
-
-        let averagePerformance = performances.isEmpty ? 0.0 : performances.map { $0.index }.reduce(0, +) / Double(performances.count)
-
         return ReportsResponse(
             activeUsers: activeUsers,
             activeTeams: activeTeams,
             currentlyWorking: currentlyWorking,
             totalHoursThisMonth: totalHoursThisMonth,
-            averagePerformance: averagePerformance,
             totalTimeEntries: completedEntries.count,
             period: "month",
             generatedAt: Date()
@@ -188,15 +180,11 @@ func routes(_ app: Application) throws {
 
         let calendar = Calendar.current
         let startOfMonth = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
-        let performancesThisMonth = try await Performance.query(on: req.db)
-            .filter(\.$createdAt >= startOfMonth)
-            .count()
 
         return GlobalStatsResponse(
             activeUsers: activeUsers,
             activeTeams: activeTeams,
             currentlyWorking: currentlyWorking,
-            performancesThisMonth: performancesThisMonth,
             timestamp: Date()
         )
     }
@@ -297,7 +285,6 @@ struct GlobalStatsResponse: Content, WithExample {
     let activeUsers: Int
     let activeTeams: Int
     let currentlyWorking: Int
-    let performancesThisMonth: Int
     let timestamp: Date
     
     static var example: GlobalStatsResponse {
@@ -316,7 +303,6 @@ struct ReportsResponse: Content, WithExample {
     let activeTeams: Int
     let currentlyWorking: Int
     let totalHoursThisMonth: Double
-    let averagePerformance: Double
     let totalTimeEntries: Int
     let period: String
     let generatedAt: Date

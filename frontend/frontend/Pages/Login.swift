@@ -78,25 +78,6 @@ struct Login: View {
                 .padding(.horizontal, 30)
                 .disabled(isLoading)
                 
-                Button(action: {
-                    showEmployeePage = true
-                }) {
-                    Text("Aller à la page d'accueil")
-                        .padding()
-                        .background(Color.mainYellow)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                
-                Button(action: {
-                    showManagerPage = true
-                }) {
-                    Text("Manager home")
-                        .padding()
-                        .background(Color.mainYellow)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
 
                 Button(action: {
                     showForgotPassword = true
