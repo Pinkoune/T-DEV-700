@@ -344,36 +344,6 @@ class TeamService {
     }
     
     
-    static func getTeamPerformance(teamId: String) async throws -> [TeamMemberPerformance] {
-        guard let url = URL(string: "\(baseURL)/\(teamId)/performance") else {
-            throw TeamError.invalidURL
-        }
-        
-        guard let token = AuthService.getToken() else {
-            throw TeamError.unauthorized
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw TeamError.invalidResponse
-        }
-        
-        if httpResponse.statusCode != 200 {
-            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                throw TeamError.serverError(errorResponse.reason ?? "Erreur serveur")
-            }
-            throw TeamError.serverError("Erreur lors de la récupération des performances")
-        }
-        
-        return try JSONDecoder().decode([TeamMemberPerformance].self, from: data)
-    }
-    
-    
     static func searchTeams(query: String) async throws -> [TeamResponse] {
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(baseURL)/search?q=\(encodedQuery)") else {
@@ -576,7 +546,7 @@ struct TeamStatsResponse: Codable {
     let teamId: String
     let totalMembers: Int
     let activeTimeEntries: Int
-    let averagePerformance: Double
+    // let averagePerformance: Double // Removed
     let teamSize: String
     let isLargeTeam: Bool
     let latenessRate: Double
@@ -588,6 +558,7 @@ struct TeamMemberStatsResponse: Codable {
     let userId: String
     let averageWeeklyHours: Double
     let latenessCount: Int
+    let averageLateMinutes: Double
     let taskCompletionRate: Double
     let lastSevenDays: [DailyStats]?
 }
@@ -599,15 +570,7 @@ struct DailyStats: Codable, Identifiable {
     var id: String { date }
 }
 
-struct TeamMemberPerformance: Codable, Identifiable {
-    let userId: String
-    let userName: String
-    let isManager: Bool
-    let latestPerformance: Double?
-    let performanceLevel: String
-    
-    var id: String { userId }
-}
+// TeamMemberPerformance struct removed
 
 // MARK: - Error Handling
 

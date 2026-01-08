@@ -82,11 +82,15 @@ struct TeamController: RouteCollection {
             .all()
         
         var latenessCount = 0
+        var totalLateMinutes = 0
         for entry in monthEntries {
             if entry.isLate(expectedArrivalTime: user.expectedArrivalTime) {
                 latenessCount += 1
+                totalLateMinutes += entry.lateMinutes(expectedArrivalTime: user.expectedArrivalTime)
             }
         }
+        
+        let averageLateMinutes = latenessCount > 0 ? Double(totalLateMinutes) / Double(latenessCount) : 0.0
         
         let randomMock = Double(abs(userID.hashValue) % 20) + 80.0
         
@@ -111,6 +115,7 @@ struct TeamController: RouteCollection {
             userId: userID.uuidString,
             averageWeeklyHours: totalHours,
             latenessCount: latenessCount,
+            averageLateMinutes: averageLateMinutes,
             taskCompletionRate: randomMock,
             lastSevenDays: dailyStats
         )
@@ -315,21 +320,7 @@ struct TeamController: RouteCollection {
             activeTimeEntries += count
         }
 
-        // Calculer la performance moyenne de l'équipe
-        var totalPerformance = 0.0
-        var performanceCount = 0
-
-        for memberID in team.members {
-            if let latestPerformance = try await Performance.query(on: req.db)
-                .filter(\.$user.$id == memberID)
-                .sort(\.$createdAt, .descending)
-                .first() {
-                totalPerformance += latestPerformance.index
-                performanceCount += 1
-            }
-        }
-
-        let averagePerformance = performanceCount > 0 ? totalPerformance / Double(performanceCount) : 0.0
+        // Performance calculation removed as requested
 
         // Calculer le lateness rate de l'équipe (ce mois)
         let calendar = Calendar.current
@@ -366,7 +357,7 @@ struct TeamController: RouteCollection {
             teamId: teamID.uuidString,
             totalMembers: team.memberCount,
             activeTimeEntries: activeTimeEntries,
-            averagePerformance: averagePerformance,
+            // averagePerformance removed
             teamSize: team.teamSize,
             isLargeTeam: team.isLargeTeam,
             latenessRate: latenessRate,
@@ -514,7 +505,7 @@ struct TeamStatsResponse: Content {
     let teamId: String
     let totalMembers: Int
     let activeTimeEntries: Int
-    let averagePerformance: Double
+    // let averagePerformance: Double // Removed
     let teamSize: String
     let isLargeTeam: Bool
     let latenessRate: Double
@@ -534,6 +525,7 @@ struct TeamMemberStatsResponse: Content {
     let userId: String
     let averageWeeklyHours: Double
     let latenessCount: Int
+    let averageLateMinutes: Double
     let taskCompletionRate: Double
     let lastSevenDays: [DailyStats]
 }

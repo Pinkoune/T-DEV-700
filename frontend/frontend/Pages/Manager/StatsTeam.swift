@@ -13,7 +13,6 @@ struct StatsTeam: View {
     
     @Environment(\.dismiss) var dismiss
     
-    @State private var performances: [TeamMemberPerformance] = []
     @State private var isLoading = false
     @State private var liveStats: TeamStatsResponse?
     
@@ -49,13 +48,6 @@ struct StatsTeam: View {
                         ScrollView {
                             VStack(spacing: 16) {
                                 if let stats = currentStats {
-                                    
-                                    StatCard(
-                                        title: "Performance moyenne",
-                                        value: String(format: "%.1f%%", stats.averagePerformance),
-                                        icon: "chart.line.uptrend.xyaxis",
-                                        trend: stats.averagePerformance >= 75 ? .up : stats.averagePerformance >= 50 ? .neutral : .down
-                                    )
                                     
                                     StatCard(
                                         title: "Membres de l'équipe",
@@ -139,13 +131,6 @@ struct StatsTeam: View {
                                 } else {
                                     
                                     StatCard(
-                                        title: "Performance",
-                                        value: "N/A",
-                                        icon: "chart.line.uptrend.xyaxis",
-                                        trend: .neutral
-                                    )
-                                    
-                                    StatCard(
                                         title: "Membres",
                                         value: "0",
                                         icon: "person.3.fill",
@@ -158,23 +143,6 @@ struct StatsTeam: View {
                                         .padding(.top, 20)
                                 }
                                 
-                                if !performances.isEmpty {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text("Performance individuelle")
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                        
-                                        ForEach(performances) { perf in
-                                            PerformanceRowSimple(performance: perf)
-                                        }
-                                    }
-                                    .padding()
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color.mainGreen)
-                                    )
-                                    .padding(.horizontal, 15)
-                                }
                             }
                             .padding(.vertical)
                             .padding(.bottom, 30)
@@ -193,25 +161,21 @@ struct StatsTeam: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .onAppear {
-                loadPerformances()
+                loadStats()
             }
         }
     }
     
-    private func loadPerformances() {
+    private func loadStats() {
         guard let team = team else { return }
         
         isLoading = true
         
         Task {
             do {
-                async let perfTask = TeamService.getTeamPerformance(teamId: team.id)
-                async let statsTask = TeamService.getTeamStats(teamId: team.id)
-                
-                let (perfs, newStats) = try await (perfTask, statsTask)
+                let newStats = try await TeamService.getTeamStats(teamId: team.id)
                 
                 await MainActor.run {
-                    performances = perfs
                     liveStats = newStats
                     isLoading = false
                 }
@@ -223,81 +187,6 @@ struct StatsTeam: View {
         }
     }
 }
-
-// MARK: - Performance Row Simple
-
-struct PerformanceRowSimple: View {
-    let performance: TeamMemberPerformance
-    
-    var performanceColor: Color {
-        guard let perf = performance.latestPerformance else { return .gray }
-        switch perf {
-        case 90...100: return .green
-        case 75..<90: return .blue
-        case 60..<75: return .yellow
-        case 40..<60: return .orange
-        default: return .red
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 3)
-                    .frame(width: 40, height: 40)
-                
-                Circle()
-                    .trim(from: 0, to: CGFloat((performance.latestPerformance ?? 0) / 100))
-                    .stroke(performanceColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .frame(width: 40, height: 40)
-                    .rotationEffect(.degrees(-90))
-                
-                if let perf = performance.latestPerformance {
-                    Text(String(format: "%.0f", perf))
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(performance.userName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                    
-                    if performance.isManager {
-                        Image(systemName: "crown.fill")
-                            .font(.caption2)
-                            .foregroundColor(.mainYellow)
-                    }
-                }
-                
-                Text(performance.performanceLevel)
-                    .font(.caption)
-                    .foregroundColor(performanceColor)
-            }
-            
-            Spacer()
-            
-            if let perf = performance.latestPerformance {
-                Text(String(format: "%.0f%%", perf))
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(performanceColor)
-            } else {
-                Text("N/A")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-// MARK: - StatCard (conservé pour compatibilité)
 
 struct StatCard: View {
     let title: String
