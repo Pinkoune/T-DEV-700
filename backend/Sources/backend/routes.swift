@@ -69,7 +69,7 @@ func routes(_ app: Application) throws {
     try app.register(collection: TeamController())
     try app.register(collection: DashboardController())
 
-    // MARK: - User Clocks (Time Entries)
+    // GET /users/:id/clocks - Pointages des utilisateurs
     app.get("users", ":userID", "clocks") { req async throws -> [TimeEntryResponse] in
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -104,7 +104,7 @@ func routes(_ app: Application) throws {
         responseDescription: "Liste des pointages de l'utilisateur"
     )
 
-    // MARK: - Reports (KPIs)
+    // GET /reports - Rapport global
     app.get("reports") { req async throws -> ReportsResponse in
         let activeUsers = try await User.query(on: req.db)
             .filter(\.$isActive == true)
@@ -118,6 +118,9 @@ func routes(_ app: Application) throws {
             .filter(\.$status == "active")
             .count()
 
+                        
+        // KPI : Concernant les heures travaillées par nos employés chaque mois.
+                        
         let calendar = Calendar.current
         let startOfMonth = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
         let completedEntries = try await TimeEntry.query(on: req.db)
@@ -164,7 +167,7 @@ func routes(_ app: Application) throws {
         responseDescription: "Rapport contenant tous les KPIs"
     )
 
-    // MARK: - Global Stats
+    // Statistiques globales par mois
     app.get("stats") { req async throws -> GlobalStatsResponse in
         let activeUsers = try await User.query(on: req.db)
             .filter(\.$isActive == true)
@@ -214,8 +217,7 @@ func routes(_ app: Application) throws {
         responseDescription: "Statistiques globales du système"
     )
 }
-
-// MARK: - Response Models
+// Réponse pour les Models
 
 struct APIInfoResponse: Content, WithExample {
     let message: String
