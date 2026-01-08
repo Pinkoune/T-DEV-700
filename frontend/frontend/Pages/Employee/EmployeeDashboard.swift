@@ -27,6 +27,37 @@ struct EmployeeDashboard: View {
                 PointerCardMini(isActive: hasActiveEntry, hoursWorked: hoursWorked)
                     .padding(.horizontal, 16)
                 
+                NavigationLink(destination: LoyaltyView()) {
+                    HStack {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                        
+                        Text("Fidélité & Récompenses")
+                            .font(.custom("McDonaldsHelvetica", size: 16))
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .padding()
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.blue, .purple, .pink]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(20)
+                    .shadow(color: .purple.opacity(0.4), radius: 8, x: 0, y: 4)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                
                 if isLoading {
                     ProgressView()
                         .tint(.white)
