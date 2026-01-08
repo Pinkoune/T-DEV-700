@@ -164,6 +164,8 @@ struct User: Codable {
     let role: String
     let department: String?
     let position: String?
+    let loyaltyPoints: Int?
+    let inventory: [String]?
 }
 
 struct ErrorResponse: Codable {

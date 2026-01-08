@@ -21,6 +21,9 @@ struct UserController: RouteCollection {
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
             user.get("performances", use: getUserPerformances)
+            user.post("loyalty", "add", use: addLoyaltyPoints)
+            user.post("loyalty", "buy", use: buyReward)
+            user.post("loyalty", "use", use: useReward)
         }
         
         protected.get("search", use: searchUsers)
@@ -262,6 +265,75 @@ struct UserController: RouteCollection {
         
         return users.map { UserResponse(from: $0) }
     }
+    
+    /// POST /users/:userID/loyalty/add - Ajoute des points de fidélité
+    func addLoyaltyPoints(req: Request) async throws -> UserResponse {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID utilisateur invalide")
+        }
+        
+        let pointRequest = try req.content.decode(AddLoyaltyPointsRequest.self)
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "Utilisateur non trouvé")
+        }
+        
+        user.loyaltyPoints += pointRequest.points
+        try await user.save(on: req.db)
+        
+        return UserResponse(from: user)
+    }
+    
+    /// POST /users/:userID/loyalty/buy - Achète une récompense
+    func buyReward(req: Request) async throws -> UserResponse {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID utilisateur invalide")
+        }
+        
+        let buyRequest = try req.content.decode(BuyRewardRequest.self)
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "Utilisateur non trouvé")
+        }
+        
+        if user.loyaltyPoints < buyRequest.cost {
+            throw Abort(.badRequest, reason: "Points insuffisants")
+        }
+        
+        user.loyaltyPoints -= buyRequest.cost
+        var currentInventory = user.inventory
+        currentInventory.append(buyRequest.item)
+        user.inventory = currentInventory
+        
+        try await user.save(on: req.db)
+        
+        return UserResponse(from: user)
+    }
+    
+    /// POST /users/:userID/loyalty/use - Utilise une récompense
+    func useReward(req: Request) async throws -> UserResponse {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID utilisateur invalide")
+        }
+        
+        let useRequest = try req.content.decode(UseRewardRequest.self)
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "Utilisateur non trouvé")
+        }
+        
+        if let index = user.inventory.firstIndex(of: useRequest.item) {
+            var currentInventory = user.inventory
+            currentInventory.remove(at: index)
+            user.inventory = currentInventory
+        } else {
+            throw Abort(.badRequest, reason: "Objet non trouvé dans l'inventaire")
+        }
+        
+        try await user.save(on: req.db)
+        
+        return UserResponse(from: user)
+    }
 }
 
 
@@ -295,6 +367,19 @@ struct UpdateUserRequest: Content {
     let isActive: Bool?
 }
 
+struct AddLoyaltyPointsRequest: Content {
+    let points: Int
+}
+
+struct BuyRewardRequest: Content {
+    let item: String
+    let cost: Int
+}
+
+struct UseRewardRequest: Content {
+    let item: String
+}
+
 struct UserResponse: Content {
     let id: UUID?
     let firstName: String
@@ -307,6 +392,8 @@ struct UserResponse: Content {
     let department: String?
     let position: String?
     let weeklyHoursTarget: Double
+    let loyaltyPoints: Int
+    let inventory: [String]
     let isActive: Bool
     let hireDate: Date?
     let createdAt: Date?
@@ -325,6 +412,8 @@ struct UserResponse: Content {
         self.position = user.position
         self.weeklyHoursTarget = user.weeklyHoursTarget
         self.isActive = user.isActive
+        self.loyaltyPoints = user.loyaltyPoints
+        self.inventory = user.inventory
         self.hireDate = user.hireDate
         self.createdAt = user.createdAt
         self.updatedAt = user.updatedAt

@@ -34,6 +34,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreatePerformance())
     app.migrations.add(AddPasswordHashToUser())
     app.migrations.add(AddExpectedArrivalTime())
+    app.migrations.add(AddLoyaltyPointsToUser())
+    app.migrations.add(AddInventoryToUser())
     app.migrations.add(SeedUsers())
     
     if app.environment == .development {

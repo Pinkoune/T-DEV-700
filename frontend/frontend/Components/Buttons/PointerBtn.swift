@@ -98,6 +98,12 @@ struct PointerBtn: View {
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
+                    
+                    // Add loyalty points
+                    Task {
+                        try? await LoyaltyService.addPoints(userId: userId, points: 10)
+                    }
+                    
                     onClockSuccess()
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

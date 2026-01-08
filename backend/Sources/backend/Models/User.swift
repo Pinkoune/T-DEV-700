@@ -49,6 +49,14 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 	
 	@Field(key: "expected_arrival_time")
 	var expectedArrivalTime: String
+
+    @Field(key: "loyalty_points")
+    var loyaltyPoints: Int
+
+    @Field(key: "inventory")
+    var inventory: [String]
+
+
 	
 	@Children(for: \.$user)
 	var timeEntries: [TimeEntry]
@@ -105,6 +113,8 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 		self.isActive = true
 		self.weeklyHoursTarget = weeklyHoursTarget
 		self.expectedArrivalTime = expectedArrivalTime
+        self.loyaltyPoints = 0
+        self.inventory = []
 	}
 }
 
@@ -131,6 +141,8 @@ struct UserDTO: Content {
 	let hireDate: Date?
 	let isActive: Bool
 	let weeklyHoursTarget: Double
+    let loyaltyPoints: Int
+    let inventory: [String]
 	let fullName: String
 	let displayRole: String
 	
@@ -149,6 +161,8 @@ struct UserDTO: Content {
 		self.hireDate = user.hireDate
 		self.isActive = user.isActive
 		self.weeklyHoursTarget = user.weeklyHoursTarget
+        self.loyaltyPoints = user.loyaltyPoints
+        self.inventory = user.inventory
 		self.fullName = user.fullName
 		self.displayRole = user.displayRole
 	}
