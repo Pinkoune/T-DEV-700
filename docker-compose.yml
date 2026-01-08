@@ -1,4 +1,54 @@
 services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./grafana/loki/config.yaml:/etc/loki/config.yml:ro  
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - project-network
+    restart: unless-stopped
+    user: "0"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./grafana/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: run --server.http.listen-addr=0.0.0.0:12345 --stability.level=generally-available /etc/alloy/config.alloy
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - project-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - project-network
+
   postgres:
     image: postgres:16-alpine
     container_name: project-postgres
@@ -18,6 +68,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
@@ -44,6 +99,11 @@ services:
     networks:
       - project-network
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - "traefik.enable=true"
       # Router principal pour /api
@@ -116,12 +176,16 @@ services:
     networks:
       - project-network
     command: /bin/sh -c "echo 'iOS SwiftUI project ready' && tail -f /dev/null"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mobile-artifacts.rule=PathPrefix(`/download`)"
       - "traefik.http.routers.mobile-artifacts.entrypoints=web"
       - "traefik.http.services.mobile-artifacts.loadbalancer.server.port=8000"
-
 
   traefik:
     image: traefik:v3.0
@@ -150,6 +214,11 @@ services:
     networks:
       - project-network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
@@ -168,6 +237,11 @@ services:
     depends_on:
       - postgres
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   project-network:
@@ -179,4 +253,8 @@ volumes:
   mobile-artifacts:
     driver: local
   traefik_certs:
+    driver: local
+  loki-data:
+    driver: local
+  grafana-data:
     driver: local
