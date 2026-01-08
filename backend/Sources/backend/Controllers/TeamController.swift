@@ -79,6 +79,7 @@ struct TeamController: RouteCollection {
         let monthEntries = try await TimeEntry.query(on: req.db)
             .filter(\.$user.$id == userID)
             .filter(\.$createdAt >= startOfMonth)
+            .filter(\.$status != "cancelled")
             .all()
         
         var latenessCount = 0
@@ -309,7 +310,6 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
 
-        // Compter les entrées de temps actives
         var activeTimeEntries = 0
         for memberID in team.members {
             let count = try await TimeEntry.query(on: req.db)
@@ -333,7 +333,7 @@ struct TeamController: RouteCollection {
             let entries = try await TimeEntry.query(on: req.db)
                 .filter(\.$user.$id == memberID)
                 .filter(\.$createdAt >= startOfMonth)
-                .filter(\.$status == "completed")
+                .filter(\.$status != "cancelled")
                 .all()
 
             totalEntries += entries.count

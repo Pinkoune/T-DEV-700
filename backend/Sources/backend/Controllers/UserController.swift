@@ -20,7 +20,7 @@ struct UserController: RouteCollection {
             user.get("profile", use: getUserProfile)
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
-            user.get("performances", use: getUserPerformances)
+
         }
         
         protected.get("search", use: searchUsers)
@@ -163,7 +163,7 @@ struct UserController: RouteCollection {
         }
         
         try await user.$timeEntries.load(on: req.db)
-        try await user.$performances.load(on: req.db)
+
         
         return UserProfileResponse(from: user)
     }
@@ -203,24 +203,7 @@ struct UserController: RouteCollection {
         return timeEntries
     }
     
-    /// GET /users/:userID/performances - Performances de l'utilisateur
-    func getUserPerformances(req: Request) async throws -> [PerformanceResponse] {
-        guard let userID = req.parameters.get("userID", as: UUID.self) else {
-            throw Abort(.badRequest, reason: "ID utilisateur invalide")
-        }
-        
-        guard let _ = try await User.find(userID, on: req.db) else {
-            throw Abort(.notFound, reason: "Utilisateur non trouvé")
-        }
-        
-        let performances = try await Performance.query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .with(\.$user)
-            .sort(\.$createdAt, .descending)
-            .all()
-        
-        return performances.map { PerformanceResponse(from: $0) }
-    }
+
     
     /// GET /users/search?q=query - Recherche d'utilisateurs
     func searchUsers(req: Request) async throws -> [UserResponse] {
@@ -338,9 +321,7 @@ struct UserProfileResponse: Codable {
     init(from user: User) {
         self.user = UserResponse(from: user)
         self.stats = UserStats(
-            totalTimeEntries: user.timeEntries.count,
-            totalPerformances: user.performances.count,
-            averagePerformance: user.performances.isEmpty ? 0 : user.performances.map { $0.index }.reduce(0, +) / Double(user.performances.count)
+            totalTimeEntries: user.timeEntries.count
         )
     }
 }
@@ -349,8 +330,6 @@ extension UserProfileResponse: Content {}
 
 struct UserStats: Content {
     let totalTimeEntries: Int
-    let totalPerformances: Int
-    let averagePerformance: Double
 }
 
 struct UserTeamResponse: Content {
