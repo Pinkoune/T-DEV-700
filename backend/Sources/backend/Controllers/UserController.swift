@@ -320,7 +320,6 @@ struct UserController: RouteCollection {
         user.loyaltyPoints += pointRequest.points
 
         if QuestManager.updateQuestProgress(user: user, type: "points", amount: pointRequest.points) {
-            // Changes saved below
         }
 
         try await user.save(on: req.db)

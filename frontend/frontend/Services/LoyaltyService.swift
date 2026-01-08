@@ -37,10 +37,7 @@ class LoyaltyService {
             }
             throw AuthError.unauthorized
         }
-        
-        
-        // Backend returns UserResponse, which matches structure of User in AuthService approximately
-        // We decode directly to User
+
         return try JSONDecoder().decode(User.self, from: data)
     }
     

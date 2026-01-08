@@ -6,14 +6,12 @@ struct QuestManager {
         let calendar = Calendar.current
         let today = Date()
         
-        // 1. Generate quests if needed
         if user.lastQuestGenDate == nil || !calendar.isDate(user.lastQuestGenDate!, inSameDayAs: today) {
             user.dailyQuests = generateDailyQuests()
             user.lastQuestGenDate = today
             hasChanges = true
         }
         
-        // 2. Check "login" quest immediately
         if updateQuestProgress(user: user, type: "login", amount: 1) {
             hasChanges = true
         }
@@ -54,7 +52,7 @@ struct QuestManager {
     }
     
     static let battlePassRewards: [Int: String] = [
-        1: "Café", // Matches existing shop item
+        1: "Café",
         3: "Petite Frite",
         5: "McFlurry",
         8: "Cheeseburger",
@@ -75,8 +73,6 @@ struct QuestManager {
                 if user.dailyQuests[i].progress >= user.dailyQuests[i].target {
                     user.dailyQuests[i].progress = user.dailyQuests[i].target
                     user.dailyQuests[i].isCompleted = true
-                    
-                    // Level Up Logic removed from here (Manual Claiming)
                     user.battlePassExp += user.dailyQuests[i].reward
                 }
                 hasChanges = true

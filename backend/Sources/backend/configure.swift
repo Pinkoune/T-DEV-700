@@ -39,8 +39,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(AddLoyaltyPointsToUser())
     app.migrations.add(AddInventoryToUser())
     app.migrations.add(AddBattlePassToUser())
-    app.migrations.add(AddClaimedRewardsToUser()) // Add the missing migration
-    app.migrations.add(SeedUsers()) // Move SeedUsers to the end
+    app.migrations.add(AddClaimedRewardsToUser())
+    app.migrations.add(SeedUsers())
     
     if app.environment == .development {
         try await app.autoMigrate()

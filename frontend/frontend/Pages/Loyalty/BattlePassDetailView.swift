@@ -5,20 +5,16 @@ struct BattlePassDetailView: View {
     let currentLevel: Int
     let currentExp: Int
     let claimedRewards: [Int]
-    let onClaim: (Int) -> Void // Callback for claiming
+    let onClaim: (Int) -> Void
     
-    // Shared gradient
     static let gradient = LinearGradient(gradient: Gradient(colors: [Color.purple.opacity(0.8), Color.blue.opacity(0.8)]), startPoint: .topLeading, endPoint: .bottomTrailing)
     
     var body: some View {
         ZStack {
-            // Updated Background to match BattlePassCard
             Self.gradient
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
-                // ... Header and Status remain same ...
-                // Header
                 HStack {
                     Button(action: {
                         presentationMode.wrappedValue.dismiss()
@@ -40,14 +36,12 @@ struct BattlePassDetailView: View {
                     
                     Spacer()
                     
-                    // Placeholder for balance
                      Image(systemName: "xmark")
                         .foregroundColor(.clear)
                         .padding(10)
                 }
                 .padding()
                 
-                // Current Status
                 VStack(spacing: 5) {
                     Text("Niveau \(currentLevel)")
                         .font(.custom("McDonaldsHelvetica", size: 30))
@@ -60,7 +54,6 @@ struct BattlePassDetailView: View {
                 }
                 .padding(.vertical, 20)
                 
-                // Levels List
                 ScrollView {
                     VStack(spacing: 15) {
                         ForEach(BattlePassConfig.levels) { level in
@@ -79,17 +72,16 @@ struct BattlePassDetailView: View {
     }
 }
 
-// ... BattlePassConfig and BattlePassLevel structs remain same ...
 struct BattlePassConfig {
     static let levels: [BattlePassLevel] = (1...20).map { level in
-        let reward: (String, String, Bool) // Name, Icon, IsImportant
+        let reward: (String, String, Bool)
         switch level {
         case 1: reward = ("Café Offert", "cup.and.saucer.fill", true)
-        case 3: reward = ("Petite Frite", "flame.fill", true) // Hot fries roughly
-        case 5: reward = ("McFlurry", "snowflake", true) // Ice cream
-        case 8: reward = ("Cheeseburger", "circle.circle.fill", true) // Round bun
-        case 10: reward = ("Big Mac", "crown.fill", true) // King of burgers
-        case 12: reward = ("Nuggets x6", "oval.fill", true) // Nugget shape
+        case 3: reward = ("Petite Frite", "flame.fill", true)
+        case 5: reward = ("McFlurry", "snowflake", true)
+        case 8: reward = ("Cheeseburger", "circle.circle.fill", true)
+        case 10: reward = ("Big Mac", "crown.fill", true)
+        case 12: reward = ("Nuggets x6", "oval.fill", true)
         case 15: reward = ("Menu Best Of", "bag.fill", true)
         case 20: reward = ("Menu Maxi Best Of", "star.circle.fill", true)
         default: reward = ("100 Points Fidélité", "star.fill", false)
@@ -120,7 +112,6 @@ struct BattlePassLevelRow: View {
     
     var body: some View {
         HStack {
-            // Level Indicator OR Reward Icon for important items
             ZStack {
                 Circle()
                     .fill(isUnlocked ? Color.mainYellow : Color.white.opacity(0.1))
@@ -150,7 +141,6 @@ struct BattlePassLevelRow: View {
             
             Spacer()
             
-            // Claim Logic
             if isUnlocked {
                 if isClaimed {
                     Image(systemName: "checkmark.circle.fill")
@@ -174,7 +164,7 @@ struct BattlePassLevelRow: View {
             }
         }
         .padding()
-        .background(Color.black.opacity(0.2)) // Darker tint for contrast on gradient
+        .background(Color.black.opacity(0.2))
         .cornerRadius(15)
         .overlay(
             RoundedRectangle(cornerRadius: 15)

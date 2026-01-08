@@ -30,52 +30,31 @@ struct PointerBtn: View {
                     showConfirmation = true
                 }) {
                     VStack(spacing: 4) {
-                        Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
-                            .font(.custom("McDonaldsHelvetica", size: 20))
-                            .foregroundColor(.white)
-                        Text(hasActiveEntry ? "(Pointer la fin de journée)" : "(Pointer le début de journée)")
-                            .font(.system(size: 12))
-                            .foregroundColor(.mainGreen.opacity(0.9))
-                    }
-                    .frame(maxWidth: 300)
-                    .frame(height: 60)
-                    .background(
-                        RoundedRectangle(cornerRadius: 30)
-                            .fill(isButtonBlocked() ? Color.gray : (isLoading ? Color.gray : Color.mainYellow))
+                        Text(hasActiveEntry ? "COLLECTER-": "COLLECTER+").font(.custom("McDonaldsHelvetica", size: 20)).foregroundColor(.white)
+                        Text(hasActiveEntry ? "(Pointer la fin de journée)": "(Pointer le début de journée)").font(.system(size: 12)).foregroundColor(.mainGreen.opacity(0.9))
+                    }.frame(maxWidth: 300).frame(height: 60).background(
+                        RoundedRectangle(cornerRadius: 30).fill(isButtonBlocked() ? Color.gray: (isLoading ? Color.gray: Color.mainYellow))
                     )
-                }
-                .disabled(isLoading || isButtonBlocked())
-                .alert("Confirmation", isPresented: $showConfirmation) {
-                    Button("Annuler", role: .cancel) { }
+                }.disabled(isLoading || isButtonBlocked()).alert("Confirmation", isPresented: $showConfirmation) {
+                    Button("Annuler", role: .cancel) {
+                    }
                     Button("Oui, je confirme") {
                         handleClock()
                     }
                 } message: {
-                    Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?" : "Voulez-vous vraiment pointer ?")
+                    Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?": "Voulez-vous vraiment pointer ?")
                 }
 
                 if isButtonBlocked() {
-                    Text(getBlockMessage())
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
+                    Text(getBlockMessage()).font(.caption).foregroundColor(.white.opacity(0.7))
                 }
 
                 if showError && !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.subheadline)
-                        .padding()
-                        .background(Color.white.opacity(0.9))
-                        .cornerRadius(8)
+                    Text(errorMessage).foregroundColor(.red).font(.subheadline).padding().background(Color.white.opacity(0.9)).cornerRadius(8)
                 }
 
                 if showSuccess {
-                    Text(hasActiveEntry ? "Arrivée pointée!" : " Départ pointé!")
-                        .foregroundColor(.white)
-                        .font(.subheadline)
-                        .padding()
-                        .background(Color.green.opacity(0.8))
-                        .cornerRadius(8)
+                    Text(hasActiveEntry ? "Arrivée pointée!": " Départ pointé!").foregroundColor(.white).font(.subheadline).padding().background(Color.green.opacity(0.8)).cornerRadius(8)
                 }
             }
 
@@ -168,24 +147,21 @@ struct PointerBtn: View {
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
 
-                    // Trigger Animation
                     withAnimation(.easeOut(duration: 0.0)) {
                         showPointsAnimation = true
                         pointsOpacity = 1.0
-                        pointsYOffset = 0 // Start at center (button)
+                        pointsYOffset = 0
                     }
 
                     withAnimation(.easeOut(duration: 1.5)) {
-                        pointsYOffset = 60 // Float down
+                        pointsYOffset = 60
                         pointsOpacity = 0.0
                     }
 
-                    // Cleanup animation state after it finishes
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         showPointsAnimation = false
                     }
 
-                    // Add loyalty points
                     Task {
                         try? await LoyaltyService.addPoints(userId: userId, points: 10)
                     }
