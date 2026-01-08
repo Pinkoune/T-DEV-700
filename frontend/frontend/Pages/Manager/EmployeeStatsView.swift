@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct EmployeeStatsView: View {
     let employeeName: String
@@ -7,7 +8,9 @@ struct EmployeeStatsView: View {
     
     @State private var weeklyHours: Double = 0.0
     @State private var latenessCount: Int = 0
+    @State private var averageLateMinutes: Double = 0.0
     @State private var taskCompletionRate: Double = 0.0
+    @State private var dailyStats: [DailyStats] = []
     @State private var isLoading = true
     @State private var errorMessage = ""
     
@@ -105,6 +108,78 @@ struct EmployeeStatsView: View {
                             )
                             .padding(.horizontal)
                             
+                            VStack(alignment: .leading) {
+                                HStack {
+                                    Image(systemName: "timer")
+                                        .foregroundColor(.white)
+                                    Text("Retard moyen")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.bottom, 5)
+                                
+                                Text(String(format: "%.0f min", averageLateMinutes))
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(.white)
+                                
+                                Text("Durée moyenne des retards constatés")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(
+                                        LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
+                                    )
+                            )
+                            .padding(.horizontal)
+                            
+                            VStack(alignment: .leading) {
+                                HStack {
+                                    Image(systemName: "chart.bar.xaxis")
+                                        .foregroundColor(.white)
+                                    Text("Évolution (7 jours)")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.bottom, 10)
+                                
+                                Chart(dailyStats) { item in
+                                    BarMark(
+                                        x: .value("Date", item.date),
+                                        y: .value("Heures", item.hours)
+                                    )
+                                    .foregroundStyle(.white)
+                                    .annotation(position: .top) {
+                                        Text(String(format: "%.1f", item.hours))
+                                            .font(.caption2)
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .frame(height: 150)
+                                .chartYAxis {
+                                    AxisMarks(position: .leading, values: .automatic) {
+                                        AxisValueLabel().foregroundStyle(.white)
+                                    }
+                                }
+                                .chartXAxis {
+                                    AxisMarks(values: .automatic) {
+                                        AxisValueLabel().foregroundStyle(.white)
+                                    }
+                                }
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(
+                                        LinearGradient(gradient: Gradient(colors: [.mainGreen, .second]), startPoint: .leading, endPoint: .trailing)
+                                    )
+                            )
+                            .padding(.horizontal)
+                            
                             Spacer()
                         }
                         .padding(.top)
@@ -141,7 +216,9 @@ struct EmployeeStatsView: View {
                 await MainActor.run {
                     self.weeklyHours = stats.averageWeeklyHours
                     self.latenessCount = stats.latenessCount
+                    self.averageLateMinutes = stats.averageLateMinutes
                     self.taskCompletionRate = stats.taskCompletionRate
+                    self.dailyStats = stats.lastSevenDays ?? []
                     self.isLoading = false
                 }
             } catch {

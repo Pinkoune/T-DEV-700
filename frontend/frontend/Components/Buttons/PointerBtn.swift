@@ -21,18 +21,19 @@ struct PointerBtn: View {
     @State private var showPointsAnimation = false
     @State private var pointsOpacity = 0.0
     @State private var pointsYOffset: CGFloat = 0
+    @State private var showConfirmation = false
 
     var body: some View {
-        ZStack {
+        Zstack {
             VStack(spacing: 12) {
                 Button(action: {
-                    handleClock()
+                    showConfirmation = true
                 }) {
                     VStack(spacing: 4) {
                         Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
                             .font(.custom("McDonaldsHelvetica", size: 20))
                             .foregroundColor(.white)
-                        Text(hasActiveEntry ? "(Pointer la fin du journée)" : "(Pointer le début du journée)")
+                        Text(hasActiveEntry ? "(Pointer la fin de journée)" : "(Pointer le début de journée)")
                             .font(.system(size: 12))
                             .foregroundColor(.mainGreen.opacity(0.9))
                     }
@@ -40,11 +41,25 @@ struct PointerBtn: View {
                     .frame(height: 60)
                     .background(
                         RoundedRectangle(cornerRadius: 30)
-                            .fill(isLoading ? Color.gray : Color.mainYellow)
+                            .fill(isButtonBlocked() ? Color.gray : (isLoading ? Color.gray : Color.mainYellow))
                     )
                 }
-                .disabled(isLoading)
-                
+                .disabled(isLoading || isButtonBlocked())
+                .alert("Confirmation", isPresented: $showConfirmation) {
+                    Button("Annuler", role: .cancel) { }
+                    Button("Oui, je confirme") {
+                        handleClock()
+                    }
+                } message: {
+                    Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?" : "Voulez-vous vraiment pointer ?")
+                }
+
+                if isButtonBlocked() {
+                    Text(getBlockMessage())
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+
                 if showError && !errorMessage.isEmpty {
                     Text(errorMessage)
                         .foregroundColor(.red)
@@ -53,7 +68,7 @@ struct PointerBtn: View {
                         .background(Color.white.opacity(0.9))
                         .cornerRadius(8)
                 }
-                
+
                 if showSuccess {
                     Text(hasActiveEntry ? "Arrivée pointée!" : " Départ pointé!")
                         .foregroundColor(.white)
@@ -63,8 +78,7 @@ struct PointerBtn: View {
                         .cornerRadius(8)
                 }
             }
-            
-            // Animation Points
+
             if showPointsAnimation {
                 Text("+10 Points")
                     .font(.custom("McDonaldsHelvetica", size: 24))
@@ -79,6 +93,46 @@ struct PointerBtn: View {
         }
     }
     
+
+    private func isButtonBlocked() -> Bool {
+        let date = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+
+        if hasActiveEntry {
+
+            if hour < 11 {
+                return true
+            }
+            if hour == 11 && minute < 30 {
+                return true
+            }
+
+            if hour >= 13 && hour < 16 {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func getBlockMessage() -> String {
+        let date = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+
+        if hasActiveEntry {
+            if hour < 12 {
+                return "Départ bloqué avant 11h30"
+            }
+            if hour >= 13 {
+                return "Départ bloqué avant 16h00"
+            }
+        }
+        return ""
+    }
+
     private func setupAudioPlayer() {
         guard let soundURL = Bundle.main.url(forResource: "mcdo-single", withExtension: "mp3") else {
             print("Impossible de trouver le fichier audio")
@@ -113,29 +167,29 @@ struct PointerBtn: View {
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
-                    
+
                     // Trigger Animation
                     withAnimation(.easeOut(duration: 0.0)) {
                         showPointsAnimation = true
                         pointsOpacity = 1.0
                         pointsYOffset = 0 // Start at center (button)
                     }
-                    
+
                     withAnimation(.easeOut(duration: 1.5)) {
                         pointsYOffset = 60 // Float down
                         pointsOpacity = 0.0
                     }
-                    
+
                     // Cleanup animation state after it finishes
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         showPointsAnimation = false
                     }
-                    
+
                     // Add loyalty points
                     Task {
                         try? await LoyaltyService.addPoints(userId: userId, points: 10)
                     }
-                    
+
                     onClockSuccess()
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

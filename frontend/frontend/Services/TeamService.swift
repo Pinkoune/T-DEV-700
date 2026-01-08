@@ -285,7 +285,6 @@ class TeamService {
         }
     }
     
-    // MARK: - Remove Member from Team
     
     static func removeMember(teamId: String, userId: String) async throws {
         guard let url = URL(string: "\(baseURL)/\(teamId)/members/\(userId)") else {
@@ -314,7 +313,6 @@ class TeamService {
         }
     }
     
-    // MARK: - Get Team Stats
     
     static func getTeamStats(teamId: String) async throws -> TeamStatsResponse {
         guard let url = URL(string: "\(baseURL)/\(teamId)/stats") else {
@@ -345,38 +343,6 @@ class TeamService {
         return try JSONDecoder().decode(TeamStatsResponse.self, from: data)
     }
     
-    // MARK: - Get Team Performance
-    
-    static func getTeamPerformance(teamId: String) async throws -> [TeamMemberPerformance] {
-        guard let url = URL(string: "\(baseURL)/\(teamId)/performance") else {
-            throw TeamError.invalidURL
-        }
-        
-        guard let token = AuthService.getToken() else {
-            throw TeamError.unauthorized
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw TeamError.invalidResponse
-        }
-        
-        if httpResponse.statusCode != 200 {
-            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                throw TeamError.serverError(errorResponse.reason ?? "Erreur serveur")
-            }
-            throw TeamError.serverError("Erreur lors de la récupération des performances")
-        }
-        
-        return try JSONDecoder().decode([TeamMemberPerformance].self, from: data)
-    }
-    
-    // MARK: - Search Teams
     
     static func searchTeams(query: String) async throws -> [TeamResponse] {
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
@@ -410,7 +376,6 @@ class TeamService {
         return try decoder.decode([TeamResponse].self, from: data)
     }
     
-    // MARK: - Get Active Teams
     
     static func getActiveTeams() async throws -> [TeamResponse] {
         guard let url = URL(string: "\(baseURL)/active") else {
@@ -443,7 +408,6 @@ class TeamService {
         return try decoder.decode([TeamResponse].self, from: data)
     }
     
-    // MARK: - Get All Users (for adding members)
     
     static func getAllUsers() async throws -> [TeamMemberResponse] {
         guard let url = URL(string: "\(Config.baseURL)/users") else {
@@ -476,7 +440,6 @@ class TeamService {
         return try decoder.decode([TeamMemberResponse].self, from: data)
     }
     
-    // MARK: - Get Member Stats
     
     static func getMemberStats(teamId: String, userId: String) async throws -> TeamMemberStatsResponse {
         guard let url = URL(string: "\(baseURL)/\(teamId)/members/\(userId)/stats") else {
@@ -508,7 +471,6 @@ class TeamService {
     }
 }
 
-// MARK: - Request Models
 
 struct CreateTeamRequest: Codable {
     let name: String
@@ -525,7 +487,6 @@ struct UpdateTeamRequest: Codable {
     let isActive: Bool?
 }
 
-// MARK: - Response Models
 
 struct TeamResponse: Codable, Identifiable, Hashable {
     let id: String?
@@ -585,7 +546,6 @@ struct TeamStatsResponse: Codable {
     let teamId: String
     let totalMembers: Int
     let activeTimeEntries: Int
-    let averagePerformance: Double
     let teamSize: String
     let isLargeTeam: Bool
     let latenessRate: Double
@@ -597,17 +557,16 @@ struct TeamMemberStatsResponse: Codable {
     let userId: String
     let averageWeeklyHours: Double
     let latenessCount: Int
+    let averageLateMinutes: Double
     let taskCompletionRate: Double
+    let lastSevenDays: [DailyStats]?
 }
 
-struct TeamMemberPerformance: Codable, Identifiable {
-    let userId: String
-    let userName: String
-    let isManager: Bool
-    let latestPerformance: Double?
-    let performanceLevel: String
+struct DailyStats: Codable, Identifiable {
+    let date: String
+    let hours: Double
     
-    var id: String { userId }
+    var id: String { date }
 }
 
 // MARK: - Error Handling

@@ -95,10 +95,7 @@ struct DashboardController: RouteCollection {
             .with(\.$user)
             .first()
         
-        let latestPerformance = try await Performance.query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .sort(\.$createdAt, .descending)
-            .first()
+
         
         let allTeams = try await Team.query(on: req.db).all()
         var userTeams: [Team] = []
@@ -134,10 +131,7 @@ struct DashboardController: RouteCollection {
             activeEntryResponse = TimeEntryResponse(from: active)
         }
         
-        var performanceResponse: PerformanceResponse? = nil
-        if let perf = latestPerformance {
-            performanceResponse = PerformanceResponse(from: perf)
-        }
+
         
         var teamsResponse: [DashboardTeamResponse] = []
         for team in userTeams {
@@ -162,7 +156,7 @@ struct DashboardController: RouteCollection {
             currentStatus: status,
             activeEntry: activeEntryResponse,
             stats: stats,
-            performance: performanceResponse,
+
             teams: teamsResponse,
             weeklyTarget: user.weeklyHoursTarget
         )
@@ -178,7 +172,6 @@ struct DashboardController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
         
-        // On va récupérer la période depuis les query params (week ou month)
         let period = req.query[String.self, at: "period"] ?? "month"
         
         let calendar = Calendar.current
@@ -194,7 +187,6 @@ struct DashboardController: RouteCollection {
             startDate = calendar.dateInterval(of: .month, for: now)?.start ?? now
         }
         
-        // Récupération de toutes les entrées de temps des membres de l'équipe
         var memberStats: [MemberHoursStats] = []
         var totalTeamHours = 0.0
         var totalDaysWorked = 0
@@ -267,7 +259,6 @@ struct DashboardController: RouteCollection {
         )
     }
     
-    // Statistiques d'heures d'un employé pour les managers
     func getEmployeeHoursStats(req: Request) async throws -> EmployeeHoursStatsResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
@@ -277,7 +268,6 @@ struct DashboardController: RouteCollection {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
         
-        // Récupération de la période depuis les query params
         let period = req.query[String.self, at: "period"] ?? "month"
         
         let calendar = Calendar.current
@@ -407,7 +397,7 @@ struct UserDashboardResponse: Content {
     let currentStatus: String
     let activeEntry: TimeEntryResponse?
     let stats: DashboardStats
-    let performance: PerformanceResponse?
+
     let teams: [DashboardTeamResponse]
     let weeklyTarget: Double
 }

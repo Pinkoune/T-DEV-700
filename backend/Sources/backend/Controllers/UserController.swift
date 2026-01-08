@@ -20,7 +20,6 @@ struct UserController: RouteCollection {
             user.get("profile", use: getUserProfile)
             user.get("teams", use: getUserTeams)
             user.get("timeentries", use: getUserTimeEntries)
-            user.get("performances", use: getUserPerformances)
             user.post("loyalty", "add", use: addLoyaltyPoints)
             user.post("loyalty", "buy", use: buyReward)
             user.post("loyalty", "use", use: useReward)
@@ -29,34 +28,29 @@ struct UserController: RouteCollection {
         
         protected.get("search", use: searchUsers)
     }
+    
 
-    // ... (existing methods) ...
-
-    /// POST /users/:userID/loyalty/claim - Récupère une récompense du Battle Pass
     func claimReward(req: Request) async throws -> UserResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
         }
-        
+
         let claimRequest = try req.content.decode(ClaimRewardRequest.self)
         let level = claimRequest.level
-        let requiredExp = level * 1000 // Simple logic matching frontend
-        
+        let requiredExp = level * 1000
+
         guard let user = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
-        // 1. Check if level is unlocked
+
         if user.battlePassExp < requiredExp {
             throw Abort(.badRequest, reason: "Niveau non atteint")
         }
-        
-        // 2. Check if already claimed
+
         if user.claimedRewards.contains(level) {
             throw Abort(.badRequest, reason: "Récompense déjà récupérée")
         }
-        
-        // 3. Determine Reward
+
         let rewardName: String
         switch level {
         case 1: rewardName = "Café Offert"
@@ -69,8 +63,7 @@ struct UserController: RouteCollection {
         case 20: rewardName = "Menu Maxi Best Of"
         default: rewardName = "100 Points Fidélité"
         }
-        
-        // 4. Grant Reward
+
         if rewardName == "100 Points Fidélité" {
              user.loyaltyPoints += 100
         } else {
@@ -78,19 +71,18 @@ struct UserController: RouteCollection {
              currentInventory.append(rewardName)
              user.inventory = currentInventory
         }
-        
-        // 5. Mark as claimed
+
         var currentClaimed = user.claimedRewards
         currentClaimed.append(level)
         user.claimedRewards = currentClaimed
-        
+
         try await user.save(on: req.db)
-        
+
         return UserResponse(from: user)
     }
-    
 
-    
+
+
     func getAllUsers(req: Request) async throws -> [UserResponse] {
         let limit = req.query[Int.self, at: "limit"] ?? 100
         
@@ -113,7 +105,7 @@ struct UserController: RouteCollection {
         if QuestManager.checkDailyQuests(user: user) {
             try await user.save(on: req.db)
         }
-        
+
         return UserResponse(from: user)
     }
     
@@ -230,7 +222,7 @@ struct UserController: RouteCollection {
         }
         
         try await user.$timeEntries.load(on: req.db)
-        try await user.$performances.load(on: req.db)
+
         
         return UserProfileResponse(from: user)
     }
@@ -270,24 +262,7 @@ struct UserController: RouteCollection {
         return timeEntries
     }
     
-    /// GET /users/:userID/performances - Performances de l'utilisateur
-    func getUserPerformances(req: Request) async throws -> [PerformanceResponse] {
-        guard let userID = req.parameters.get("userID", as: UUID.self) else {
-            throw Abort(.badRequest, reason: "ID utilisateur invalide")
-        }
-        
-        guard let _ = try await User.find(userID, on: req.db) else {
-            throw Abort(.notFound, reason: "Utilisateur non trouvé")
-        }
-        
-        let performances = try await Performance.query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .with(\.$user)
-            .sort(\.$createdAt, .descending)
-            .all()
-        
-        return performances.map { PerformanceResponse(from: $0) }
-    }
+
     
     /// GET /users/search?q=query - Recherche d'utilisateurs
     func searchUsers(req: Request) async throws -> [UserResponse] {
@@ -329,68 +304,68 @@ struct UserController: RouteCollection {
         
         return users.map { UserResponse(from: $0) }
     }
-    
+
     /// POST /users/:userID/loyalty/add - Ajoute des points de fidélité
     func addLoyaltyPoints(req: Request) async throws -> UserResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
         }
-        
+
         let pointRequest = try req.content.decode(AddLoyaltyPointsRequest.self)
-        
+
         guard let user = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
+
         user.loyaltyPoints += pointRequest.points
-        
+
         if QuestManager.updateQuestProgress(user: user, type: "points", amount: pointRequest.points) {
             // Changes saved below
         }
-        
+
         try await user.save(on: req.db)
-        
+
         return UserResponse(from: user)
     }
-    
+
     /// POST /users/:userID/loyalty/buy - Achète une récompense
     func buyReward(req: Request) async throws -> UserResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
         }
-        
+
         let buyRequest = try req.content.decode(BuyRewardRequest.self)
-        
+
         guard let user = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
+
         if user.loyaltyPoints < buyRequest.cost {
             throw Abort(.badRequest, reason: "Points insuffisants")
         }
-        
+
         user.loyaltyPoints -= buyRequest.cost
         var currentInventory = user.inventory
         currentInventory.append(buyRequest.item)
         user.inventory = currentInventory
-        
+
         try await user.save(on: req.db)
-        
+
         return UserResponse(from: user)
     }
-    
+
     /// POST /users/:userID/loyalty/use - Utilise une récompense
     func useReward(req: Request) async throws -> UserResponse {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID utilisateur invalide")
         }
-        
+
         let useRequest = try req.content.decode(UseRewardRequest.self)
-        
+
         guard let user = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
         }
-        
+
         if let index = user.inventory.firstIndex(of: useRequest.item) {
             var currentInventory = user.inventory
             currentInventory.remove(at: index)
@@ -398,9 +373,9 @@ struct UserController: RouteCollection {
         } else {
             throw Abort(.badRequest, reason: "Objet non trouvé dans l'inventaire")
         }
-        
+
         try await user.save(on: req.db)
-        
+
         return UserResponse(from: user)
     }
 }
@@ -452,12 +427,11 @@ struct UseRewardRequest: Content {
 struct ClaimRewardRequest: Content {
     let level: Int
 }
-    
+
 struct UserResponse: Content {
     let id: UUID?
     let firstName: String
     let lastName: String
-// ... rest of structs ...
     let fullName: String
     let email: String
     let phone: String
@@ -470,7 +444,7 @@ struct UserResponse: Content {
     let inventory: [String]
     let battlePassExp: Int
     let dailyQuests: [User.DailyQuest]
-    let claimedRewards: [Int] // Added
+    let claimedRewards: [Int]
     let isActive: Bool
     let hireDate: Date?
     let createdAt: Date?
@@ -507,9 +481,7 @@ struct UserProfileResponse: Codable {
     init(from user: User) {
         self.user = UserResponse(from: user)
         self.stats = UserStats(
-            totalTimeEntries: user.timeEntries.count,
-            totalPerformances: user.performances.count,
-            averagePerformance: user.performances.isEmpty ? 0 : user.performances.map { $0.index }.reduce(0, +) / Double(user.performances.count)
+            totalTimeEntries: user.timeEntries.count
         )
     }
 }
@@ -518,8 +490,6 @@ extension UserProfileResponse: Content {}
 
 struct UserStats: Content {
     let totalTimeEntries: Int
-    let totalPerformances: Int
-    let averagePerformance: Double
 }
 
 struct UserTeamResponse: Content {
