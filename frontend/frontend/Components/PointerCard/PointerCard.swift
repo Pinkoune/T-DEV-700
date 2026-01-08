@@ -82,7 +82,6 @@ struct PointerCard: View {
             } catch {
                 await MainActor.run {
                     isLoading = false
-                    print("Erreur chargement: \(error.localizedDescription)")
                 }
             }
         }

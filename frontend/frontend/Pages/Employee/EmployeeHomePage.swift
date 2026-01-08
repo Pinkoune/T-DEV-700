@@ -77,7 +77,7 @@ struct EmployeeHomePage: View {
                     hasActiveEntry = response.hasActiveEntry
                 }
             } catch {
-                print("Erreur chargement statut: \(error.localizedDescription)")
+                // print("Erreur chargement statut: \(error.localizedDescription)")
             }
         }
     }
