@@ -546,7 +546,6 @@ struct TeamStatsResponse: Codable {
     let teamId: String
     let totalMembers: Int
     let activeTimeEntries: Int
-    // let averagePerformance: Double // Removed
     let teamSize: String
     let isLargeTeam: Bool
     let latenessRate: Double
@@ -569,8 +568,6 @@ struct DailyStats: Codable, Identifiable {
     
     var id: String { date }
 }
-
-// TeamMemberPerformance struct removed
 
 // MARK: - Error Handling
 

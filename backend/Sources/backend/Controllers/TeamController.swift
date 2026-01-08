@@ -222,7 +222,6 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound, reason: "Équipe non trouvée")
         }
 
-        // Soft delete : marquer comme inactive
         team.isActive = false
         try await team.save(on: req.db)
 
@@ -320,9 +319,6 @@ struct TeamController: RouteCollection {
             activeTimeEntries += count
         }
 
-        // Performance calculation removed as requested
-
-        // Calculer le lateness rate de l'équipe (ce mois)
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
@@ -351,13 +347,12 @@ struct TeamController: RouteCollection {
         }
 
         let latenessRate = totalEntries > 0 ? (Double(totalLateEntries) / Double(totalEntries)) * 100 : 0.0
-        let averageLateMinutes = totalLateEntries > 0 ? Double(totalLateMinutes) / Double(totalLateEntries) : 0.0
+        let averageLateMinutes = totalLateEntries > 0 ? Double(totalLateEntries) / Double(totalLateEntries) : 0.0
 
         return TeamStatsResponse(
             teamId: teamID.uuidString,
             totalMembers: team.memberCount,
             activeTimeEntries: activeTimeEntries,
-            // averagePerformance removed
             teamSize: team.teamSize,
             isLargeTeam: team.isLargeTeam,
             latenessRate: latenessRate,
@@ -379,12 +374,10 @@ struct TeamController: RouteCollection {
         var memberPerformances: [TeamMemberPerformance] = []
 
         for memberID in team.members {
-            // Récupérer l'utilisateur
             guard let user = try await User.find(memberID, on: req.db) else {
                 continue
             }
 
-            // Récupérer la performance la plus récente
             let latestPerformance = try await Performance.query(on: req.db)
                 .filter(\.$user.$id == memberID)
                 .sort(\.$createdAt, .descending)
@@ -401,9 +394,7 @@ struct TeamController: RouteCollection {
 
         return memberPerformances
     }
-    
-    // MARK: - Search & Filters
-    
+        
     /// GET /teams/search?q=terme - Recherche des équipes
     func searchTeams(req: Request) async throws -> [TeamResponse] {
         guard let searchTerm = req.query[String.self, at: "q"], !searchTerm.isEmpty else {
@@ -505,7 +496,6 @@ struct TeamStatsResponse: Content {
     let teamId: String
     let totalMembers: Int
     let activeTimeEntries: Int
-    // let averagePerformance: Double // Removed
     let teamSize: String
     let isLargeTeam: Bool
     let latenessRate: Double

@@ -243,7 +243,6 @@ struct TeamDetailView: View {
     }
 }
 
-// MARK: - Team Header Card
 
 struct TeamHeaderCard: View {
     let team: Team
@@ -316,17 +315,13 @@ struct TeamHeaderCard: View {
     }
 }
 
-// MARK: - Quick Stats Card
-
 struct QuickStatsCard: View {
     let stats: TeamStatsResponse
     
     var body: some View {
         HStack(spacing: 0) {
             StatItem(value: "\(stats.totalMembers)", label: "Membres", icon: "person.fill")
-            
-            // Performance StatItem removed
-            
+                        
             StatItem(
                 value: String(format: "%.0f%%", stats.latenessRate),
                 label: "Retards",
@@ -364,8 +359,6 @@ struct StatItem: View {
         .frame(maxWidth: .infinity)
     }
 }
-
-// MARK: - Action Row
 
 struct ActionRow: View {
     let icon: String
@@ -412,8 +405,6 @@ struct ActionRow: View {
     }
 }
 
-// MARK: - Member Preview Row
-
 struct MemberPreviewRow: View {
     let member: TeamMember
     let isManager: Bool
@@ -457,12 +448,6 @@ struct MemberPreviewRow: View {
     }
 }
 
-// MARK: - Performance Row
-
-// PerformanceRow struct removed
-
-// MARK: - Stats Team Detail View (Sheet)
-
 struct StatsTeamDetailView: View {
     let team: Team
     let stats: TeamStatsResponse?
@@ -478,10 +463,7 @@ struct StatsTeamDetailView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        if let stats = stats {
-
-                            // Performance moyenne card removed
-                            
+                        if let stats = stats {                            
 
                             StatCard(
                                 title: "Membres actifs",
@@ -552,8 +534,6 @@ struct StatsTeamDetailView: View {
                             .padding(.horizontal, 15)
                         }
                         
-
-                        // Individual performance list removed
                     }
                     .padding(.vertical, 20)
                 }
@@ -574,11 +554,6 @@ struct StatsTeamDetailView: View {
         }
     }
 }
-
-// PerformanceDetailRow struct removed
-
-// MARK: - Preview
-
 #Preview {
     TeamDetailView(teamId: "1")
 }
