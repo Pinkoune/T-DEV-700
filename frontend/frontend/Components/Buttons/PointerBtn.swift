@@ -18,45 +18,60 @@ struct PointerBtn: View {
     @State private var errorMessage = ""
     @State private var showError = false
     @State private var showSuccess = false
-    
+    @State private var showPointsAnimation = false
+    @State private var pointsOpacity = 0.0
+    @State private var pointsYOffset: CGFloat = 0
+
     var body: some View {
-        VStack(spacing: 12) {
-            Button(action: {
-                handleClock()
-            }) {
-                VStack(spacing: 4) {
-                    Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
-                        .font(.custom("McDonaldsHelvetica", size: 20))
-                        .foregroundColor(.white)
-                    Text(hasActiveEntry ? "(Pointer la fin du journée)" : "(Pointer le début du journée)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.mainGreen.opacity(0.9))
+        ZStack {
+            VStack(spacing: 12) {
+                Button(action: {
+                    handleClock()
+                }) {
+                    VStack(spacing: 4) {
+                        Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
+                            .font(.custom("McDonaldsHelvetica", size: 20))
+                            .foregroundColor(.white)
+                        Text(hasActiveEntry ? "(Pointer la fin du journée)" : "(Pointer le début du journée)")
+                            .font(.system(size: 12))
+                            .foregroundColor(.mainGreen.opacity(0.9))
+                    }
+                    .frame(maxWidth: 300)
+                    .frame(height: 60)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(isLoading ? Color.gray : Color.mainYellow)
+                    )
                 }
-                .frame(maxWidth: 300)
-                .frame(height: 60)
-                .background(
-                    RoundedRectangle(cornerRadius: 30)
-                        .fill(isLoading ? Color.gray : Color.mainYellow)
-                )
+                .disabled(isLoading)
+                
+                if showError && !errorMessage.isEmpty {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.subheadline)
+                        .padding()
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(8)
+                }
+                
+                if showSuccess {
+                    Text(hasActiveEntry ? "Arrivée pointée!" : " Départ pointé!")
+                        .foregroundColor(.white)
+                        .font(.subheadline)
+                        .padding()
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8)
+                }
             }
-            .disabled(isLoading)
             
-            if showError && !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.subheadline)
-                    .padding()
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(8)
-            }
-            
-            if showSuccess {
-                Text(hasActiveEntry ? "Arrivée pointée!" : " Départ pointé!")
-                    .foregroundColor(.white)
-                    .font(.subheadline)
-                    .padding()
-                    .background(Color.green.opacity(0.8))
-                    .cornerRadius(8)
+            // Animation Points
+            if showPointsAnimation {
+                Text("+10 Points")
+                    .font(.custom("McDonaldsHelvetica", size: 24))
+                    .foregroundColor(.mainYellow)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    .offset(y: pointsYOffset)
+                    .opacity(pointsOpacity)
             }
         }
         .onAppear {
@@ -81,7 +96,7 @@ struct PointerBtn: View {
     private func playSound() {
         audioPlayer?.play()
     }
-    
+
     private func handleClock() {
         showError = false
         showSuccess = false
@@ -98,6 +113,23 @@ struct PointerBtn: View {
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
+                    
+                    // Trigger Animation
+                    withAnimation(.easeOut(duration: 0.0)) {
+                        showPointsAnimation = true
+                        pointsOpacity = 1.0
+                        pointsYOffset = 0 // Start at center (button)
+                    }
+                    
+                    withAnimation(.easeOut(duration: 1.5)) {
+                        pointsYOffset = 60 // Float down
+                        pointsOpacity = 0.0
+                    }
+                    
+                    // Cleanup animation state after it finishes
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        showPointsAnimation = false
+                    }
                     
                     // Add loyalty points
                     Task {

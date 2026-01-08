@@ -24,9 +24,69 @@ struct UserController: RouteCollection {
             user.post("loyalty", "add", use: addLoyaltyPoints)
             user.post("loyalty", "buy", use: buyReward)
             user.post("loyalty", "use", use: useReward)
+            user.post("loyalty", "claim", use: claimReward)
         }
         
         protected.get("search", use: searchUsers)
+    }
+
+    // ... (existing methods) ...
+
+    /// POST /users/:userID/loyalty/claim - Récupère une récompense du Battle Pass
+    func claimReward(req: Request) async throws -> UserResponse {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID utilisateur invalide")
+        }
+        
+        let claimRequest = try req.content.decode(ClaimRewardRequest.self)
+        let level = claimRequest.level
+        let requiredExp = level * 1000 // Simple logic matching frontend
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "Utilisateur non trouvé")
+        }
+        
+        // 1. Check if level is unlocked
+        if user.battlePassExp < requiredExp {
+            throw Abort(.badRequest, reason: "Niveau non atteint")
+        }
+        
+        // 2. Check if already claimed
+        if user.claimedRewards.contains(level) {
+            throw Abort(.badRequest, reason: "Récompense déjà récupérée")
+        }
+        
+        // 3. Determine Reward
+        let rewardName: String
+        switch level {
+        case 1: rewardName = "Café Offert"
+        case 3: rewardName = "Petite Frite"
+        case 5: rewardName = "McFlurry"
+        case 8: rewardName = "Cheeseburger"
+        case 10: rewardName = "Big Mac"
+        case 12: rewardName = "Nuggets x6"
+        case 15: rewardName = "Menu Best Of"
+        case 20: rewardName = "Menu Maxi Best Of"
+        default: rewardName = "100 Points Fidélité"
+        }
+        
+        // 4. Grant Reward
+        if rewardName == "100 Points Fidélité" {
+             user.loyaltyPoints += 100
+        } else {
+             var currentInventory = user.inventory
+             currentInventory.append(rewardName)
+             user.inventory = currentInventory
+        }
+        
+        // 5. Mark as claimed
+        var currentClaimed = user.claimedRewards
+        currentClaimed.append(level)
+        user.claimedRewards = currentClaimed
+        
+        try await user.save(on: req.db)
+        
+        return UserResponse(from: user)
     }
     
 
@@ -48,6 +108,10 @@ struct UserController: RouteCollection {
         
         guard let user = try await User.find(userID, on: req.db) else {
             throw Abort(.notFound, reason: "Utilisateur non trouvé")
+        }
+        
+        if QuestManager.checkDailyQuests(user: user) {
+            try await user.save(on: req.db)
         }
         
         return UserResponse(from: user)
@@ -279,6 +343,11 @@ struct UserController: RouteCollection {
         }
         
         user.loyaltyPoints += pointRequest.points
+        
+        if QuestManager.updateQuestProgress(user: user, type: "points", amount: pointRequest.points) {
+            // Changes saved below
+        }
+        
         try await user.save(on: req.db)
         
         return UserResponse(from: user)
@@ -380,10 +449,15 @@ struct UseRewardRequest: Content {
     let item: String
 }
 
+struct ClaimRewardRequest: Content {
+    let level: Int
+}
+    
 struct UserResponse: Content {
     let id: UUID?
     let firstName: String
     let lastName: String
+// ... rest of structs ...
     let fullName: String
     let email: String
     let phone: String
@@ -394,6 +468,9 @@ struct UserResponse: Content {
     let weeklyHoursTarget: Double
     let loyaltyPoints: Int
     let inventory: [String]
+    let battlePassExp: Int
+    let dailyQuests: [User.DailyQuest]
+    let claimedRewards: [Int] // Added
     let isActive: Bool
     let hireDate: Date?
     let createdAt: Date?
@@ -414,6 +491,9 @@ struct UserResponse: Content {
         self.isActive = user.isActive
         self.loyaltyPoints = user.loyaltyPoints
         self.inventory = user.inventory
+        self.battlePassExp = user.battlePassExp
+        self.dailyQuests = user.dailyQuests
+        self.claimedRewards = user.claimedRewards // Added
         self.hireDate = user.hireDate
         self.createdAt = user.createdAt
         self.updatedAt = user.updatedAt

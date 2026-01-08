@@ -166,6 +166,19 @@ struct User: Codable {
     let position: String?
     let loyaltyPoints: Int?
     let inventory: [String]?
+    let battlePassExp: Int?
+    let dailyQuests: [DailyQuest]?
+    let claimedRewards: [Int]?
+}
+
+struct DailyQuest: Codable, Identifiable {
+    let id: String
+    let title: String
+    let type: String
+    let target: Int
+    let progress: Int
+    let reward: Int
+    let isCompleted: Bool
 }
 
 struct ErrorResponse: Codable {

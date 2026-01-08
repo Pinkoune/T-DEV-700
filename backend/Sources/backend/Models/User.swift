@@ -56,6 +56,28 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
     @Field(key: "inventory")
     var inventory: [String]
 
+    @Field(key: "battle_pass_exp")
+    var battlePassExp: Int
+    
+    @OptionalField(key: "last_quest_gen_date")
+    var lastQuestGenDate: Date?
+    
+    @Field(key: "daily_quests")
+    var dailyQuests: [DailyQuest]
+
+    @Field(key: "claimed_rewards")
+    var claimedRewards: [Int]
+
+    struct DailyQuest: Codable {
+        var id: String
+        var title: String
+        var type: String // "login", "punctuality", "points"
+        var target: Int
+        var progress: Int
+        var reward: Int
+        var isCompleted: Bool
+    }
+
 
 	
 	@Children(for: \.$user)
@@ -115,6 +137,9 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
 		self.expectedArrivalTime = expectedArrivalTime
         self.loyaltyPoints = 0
         self.inventory = []
+        self.battlePassExp = 0
+        self.dailyQuests = []
+        self.claimedRewards = []
 	}
 }
 
@@ -143,6 +168,9 @@ struct UserDTO: Content {
 	let weeklyHoursTarget: Double
     let loyaltyPoints: Int
     let inventory: [String]
+    let battlePassExp: Int
+    let dailyQuests: [User.DailyQuest]
+    let claimedRewards: [Int]
 	let fullName: String
 	let displayRole: String
 	
@@ -163,6 +191,9 @@ struct UserDTO: Content {
 		self.weeklyHoursTarget = user.weeklyHoursTarget
         self.loyaltyPoints = user.loyaltyPoints
         self.inventory = user.inventory
+        self.battlePassExp = user.battlePassExp
+        self.dailyQuests = user.dailyQuests
+        self.claimedRewards = user.claimedRewards
 		self.fullName = user.fullName
 		self.displayRole = user.displayRole
 	}
