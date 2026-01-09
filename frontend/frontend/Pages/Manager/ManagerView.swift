@@ -5,21 +5,23 @@ struct ManagerView: View {
     
     var body: some View {
         ZStack {
-            Group {
-                if selectedTab == 0 {
-                    NavigationStack {
-                        ManagerHomePage()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .navigationBarHidden(true)
-                    }
-                } else {
-                    NavigationStack {
-                        ManagerAccount()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .navigationBarHidden(true)
-                    }
+            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    ManagerHomePage()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .navigationBarHidden(true)
                 }
+                .tag(0)
+                
+                NavigationStack {
+                    ManagerAccount()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .navigationBarHidden(true)
+                }
+                .tag(1)
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .animation(.easeInOut(duration: 0.15), value: selectedTab)
             
             VStack {
                 Spacer()
