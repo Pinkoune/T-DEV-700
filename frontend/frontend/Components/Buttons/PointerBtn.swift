@@ -86,21 +86,27 @@ struct PointerBtn: View {
         let minute = calendar.component(.minute, from: date)
 
         if hasActiveEntry {
+            // Plus de blocage horaire pour le départ (présentation)
+            // On laisse juste le blocage temporaire de 10s gérer ça
         } else {
-            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+            // Vérifier si on a déjà dépointé ce matin ou cet après-midi
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime_\(userId)") as? Date {
                 if calendar.isDateInToday(lastClockOut) {
                     let lastOutHour = calendar.component(.hour, from: lastClockOut)
                     
+                    // Si on a dépointé le matin (< 13h) et qu'on est encore le matin
                     if lastOutHour < 13 && hour < 13 {
                         return true
                     }
                     
+                    // Si on a dépointé l'après-midi (>= 13h) et qu'on est encore l'après-midi
                     if lastOutHour >= 13 && hour >= 13 {
                         return true
                     }
                 }
             }
 
+            // Blocage du retour (arrivée) entre 12h et 13h
             if hour >= 12 && hour < 13 {
                 return true
             }
@@ -119,8 +125,9 @@ struct PointerBtn: View {
         let hour = calendar.component(.hour, from: date)
 
         if hasActiveEntry {
+           // Plus de message de blocage pour le départ
         } else {
-            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime_\(userId)") as? Date {
                 if calendar.isDateInToday(lastClockOut) {
                     let lastOutHour = calendar.component(.hour, from: lastClockOut)
                     
@@ -159,7 +166,7 @@ struct PointerBtn: View {
     }
     
     private func checkCooldown() {
-        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime") as? Date {
+        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime_\(userId)") as? Date {
             let timePassed = Date().timeIntervalSince(lastClock)
             if timePassed < 10 {
                 isTemporarilyBlocked = true
@@ -187,11 +194,15 @@ struct PointerBtn: View {
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
 
-                    UserDefaults.standard.set(Date(), forKey: "lastClockTime")
+                    // Sauvegarder l'heure de dernier pointage pour le cooldown
+                    UserDefaults.standard.set(Date(), forKey: "lastClockTime_\(userId)")
+                    
+                    // Si on vient de dépointer (status inactif), on sauvegarde pour bloquer la ré-entrée
                     if !hasActiveEntry {
-                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime")
+                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime_\(userId)")
                     }
 
+                    // Activation du blocage temporaire de 10s
                     isTemporarilyBlocked = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
                         isTemporarilyBlocked = false
