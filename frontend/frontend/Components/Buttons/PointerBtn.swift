@@ -1,3 +1,10 @@
+//
+//  PointerBtn.swift
+//  frontend
+//
+//  Created by Jérémy Barcelo on 13/10/2025.
+//
+
 import SwiftUI
 import AVFoundation
 
@@ -15,149 +22,152 @@ struct PointerBtn: View {
     @State private var pointsOpacity = 0.0
     @State private var pointsYOffset: CGFloat = 0
     @State private var showConfirmation = false
-    @State private var todayEntries: [TimeEntryResponse] = []
+    @State private var isTemporarilyBlocked = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            Button(action: {
-                showConfirmation = true
-            }) {
-                VStack(spacing: 4) {
-                    Text(hasActiveEntry ? "COLLECTER-" : "COLLECTER+")
-                        .font(.custom("McDonaldsHelvetica", size: 20))
-                        .foregroundColor(.white)
-                    
-                    Text(hasActiveEntry ? "(Pointer la fin de journée)" : "(Pointer le début de journée)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.mainGreen.opacity(0.9))
+        ZStack {
+            VStack(spacing: 12) {
+                Button(action: {
+                    showConfirmation = true
+                }) {
+                    VStack(spacing: 4) {
+                        Text(hasActiveEntry ? "COLLECTER-": "COLLECTER+").font(.custom("McDonaldsHelvetica", size: 20)).foregroundColor(.white)
+                        Text(hasActiveEntry ? "(Pointer la fin de journée)": "(Pointer le début de journée)").font(.system(size: 12)).foregroundColor(.mainGreen.opacity(0.9))
+                    }.frame(maxWidth: 300).frame(height: 60).background(
+                        RoundedRectangle(cornerRadius: 30).fill(isButtonBlocked() ? Color.gray: (isLoading ? Color.gray: Color.mainYellow))
+                    )
+                }.disabled(isLoading || isButtonBlocked()).alert("Confirmation", isPresented: $showConfirmation) {
+                    Button("Annuler", role: .cancel) {
+                    }
+                    Button("Oui, je confirme") {
+                        handleClock()
+                    }
+                } message: {
+                    Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?": "Voulez-vous vraiment pointer ?")
                 }
-                .frame(maxWidth: 300)
-                .frame(height: 60)
-                .background(
-                    RoundedRectangle(cornerRadius: 30)
-                        .fill(isButtonBlocked() ? Color.gray : (isLoading ? Color.gray : Color.mainYellow))
-                )
-            }
-            .disabled(isLoading || isButtonBlocked())
-            .alert("Confirmation", isPresented: $showConfirmation) {
-                Button("Annuler", role: .cancel) { }
-                Button("Oui, je confirme") {
-                    handleClock()
+
+                if isButtonBlocked() {
+                    Text(getBlockMessage()).font(.caption).foregroundColor(.white.opacity(0.7))
                 }
-            } message: {
-                Text(hasActiveEntry ? "Voulez-vous vraiment pointer ?" : "Voulez-vous vraiment pointer ?")
+
+                if showError && !errorMessage.isEmpty {
+                    Text(errorMessage).foregroundColor(.red).font(.subheadline).padding().background(Color.white.opacity(0.9)).cornerRadius(8)
+                }
+
+                if showSuccess {
+                    Text(hasActiveEntry ? "Arrivée pointée!": " Départ pointé!").foregroundColor(.white).font(.subheadline).padding().background(Color.green.opacity(0.8)).cornerRadius(8)
+                }
             }
 
-            if isButtonBlocked() {
-                Text(getBlockMessage())
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
-            }
-
-            if showError && !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.subheadline)
-                    .padding()
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(8)
-            }
-
-            if showSuccess {
-                Text(hasActiveEntry ? "Arrivée pointée!" : "Départ pointé!")
-                    .foregroundColor(.white)
-                    .font(.subheadline)
-                    .padding()
-                    .background(Color.green.opacity(0.8))
-                    .cornerRadius(8)
+            if showPointsAnimation {
+                Text("+10 Points")
+                    .font(.custom("McDonaldsHelvetica", size: 24))
+                    .foregroundColor(.mainYellow)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    .offset(y: pointsYOffset)
+                    .opacity(pointsOpacity)
             }
         }
         .onAppear {
             setupAudioPlayer()
-            loadHistory()
+            checkCooldown()
         }
     }
     
-    private func loadHistory() {
-        Task {
-            do {
-                let entries = try await TimeEntryService.getTimeEntries(userId: userId, limit: 10)
-                await MainActor.run {
-                    todayEntries = entries.filter { Calendar.current.isDateInToday($0.arrival) }
-                }
-            } catch { }
-        }
-    }
 
     private func isButtonBlocked() -> Bool {
+        if isTemporarilyBlocked {
+            return true
+        }
+
         let date = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: date)
         let minute = calendar.component(.minute, from: date)
 
         if hasActiveEntry {
-            if hour < 11 {
-                return true
-            }
-            if hour == 11 && minute < 30 {
-                return true
-            }
-            if hour >= 13 && hour < 16 {
-                return true
-            }
         } else {
-            let morningEntry = todayEntries.first { Calendar.current.component(.hour, from: $0.arrival) < 13 }
-            let afternoonEntry = todayEntries.first { Calendar.current.component(.hour, from: $0.arrival) >= 13 }
-            
-            if hour < 13 {
-                if morningEntry != nil {
-                    return true
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+                if calendar.isDateInToday(lastClockOut) {
+                    let lastOutHour = calendar.component(.hour, from: lastClockOut)
+                    
+                    if lastOutHour < 13 && hour < 13 {
+                        return true
+                    }
+                    
+                    if lastOutHour >= 13 && hour >= 13 {
+                        return true
+                    }
                 }
-            } else {
-                if afternoonEntry != nil {
-                    return true
-                }
+            }
+
+            if hour >= 12 && hour < 13 {
+                return true
             }
         }
+
         return false
     }
 
     private func getBlockMessage() -> String {
+        if isTemporarilyBlocked {
+            return "Veuillez patienter 10 secondes..."
+        }
+
         let date = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: date)
 
         if hasActiveEntry {
-            if hour < 12 {
-                return "Départ bloqué avant 11h30"
-            }
-            if hour >= 13 {
-                return "Départ bloqué avant 16h00"
-            }
         } else {
-            let morningEntry = todayEntries.first { Calendar.current.component(.hour, from: $0.arrival) < 13 }
-            let afternoonEntry = todayEntries.first { Calendar.current.component(.hour, from: $0.arrival) >= 13 }
-            
-            if hour < 13 && morningEntry != nil {
-                return "Session du matin déjà effectuée"
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+                if calendar.isDateInToday(lastClockOut) {
+                    let lastOutHour = calendar.component(.hour, from: lastClockOut)
+                    
+                    if lastOutHour < 13 && hour < 13 {
+                        return "Matinée terminée"
+                    }
+                    if lastOutHour >= 13 && hour >= 13 {
+                        return "Journée terminée"
+                    }
+                }
             }
-            if hour >= 13 && afternoonEntry != nil {
-                return "Session de l'après-midi déjà effectuée"
+
+            if hour >= 12 && hour < 13 {
+                 return "Retour bloqué avant 13h00"
             }
         }
         return ""
     }
 
     private func setupAudioPlayer() {
-        guard let soundURL = Bundle.main.url(forResource: "mcdo-single", withExtension: "mp3") else { return }
+        guard let soundURL = Bundle.main.url(forResource: "mcdo-single", withExtension: "mp3") else {
+            print("Impossible de trouver le fichier audio")
+            return
+        }
+        
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
             audioPlayer?.prepareToPlay()
-        } catch { }
+        } catch {
+            print("Erreur audio: \(error)")
+        }
     }
     
     private func playSound() {
         audioPlayer?.play()
+    }
+    
+    private func checkCooldown() {
+        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime") as? Date {
+            let timePassed = Date().timeIntervalSince(lastClock)
+            if timePassed < 10 {
+                isTemporarilyBlocked = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + (10 - timePassed)) {
+                    isTemporarilyBlocked = false
+                }
+            }
+        }
     }
 
     private func handleClock() {
@@ -175,8 +185,37 @@ struct PointerBtn: View {
                     playSound()
                     hasActiveEntry = (response.status == "active")
                     showSuccess = true
-                    
-                    loadHistory()
+                    print("Pointage réussi: \(response.status)")
+
+                    UserDefaults.standard.set(Date(), forKey: "lastClockTime")
+                    if !hasActiveEntry {
+                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime")
+                    }
+
+                    isTemporarilyBlocked = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                        isTemporarilyBlocked = false
+                    }
+
+                    withAnimation(.easeOut(duration: 0.0)) {
+                        showPointsAnimation = true
+                        pointsOpacity = 1.0
+                        pointsYOffset = 0
+                    }
+
+                    withAnimation(.easeOut(duration: 1.5)) {
+                        pointsYOffset = 60
+                        pointsOpacity = 0.0
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        showPointsAnimation = false
+                    }
+
+                    Task {
+                        try? await LoyaltyService.addPoints(userId: userId, points: 10)
+                    }
+
                     onClockSuccess()
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -188,6 +227,7 @@ struct PointerBtn: View {
                     isLoading = false
                     errorMessage = error.localizedDescription
                     showError = true
+                    print("Erreur pointage: \(error.localizedDescription)")
                 }
             }
         }

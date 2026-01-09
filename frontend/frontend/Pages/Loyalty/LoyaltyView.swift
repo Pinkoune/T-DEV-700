@@ -9,6 +9,7 @@ struct LoyaltyView: View {
     @State private var userId: String = ""
     @State private var isLoading = false
     @State private var showBattlePassDetail = false
+    @State private var showSnakeGame = false
     @Environment(\.presentationMode) var presentationMode
     
     var level: Int {
@@ -69,8 +70,15 @@ struct LoyaltyView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
+
                     .background(Color.black.opacity(0.2))
                     .cornerRadius(20)
+                    .onLongPressGesture(minimumDuration: 5.0) {
+                        showSnakeGame = true
+                    }
+                    .fullScreenCover(isPresented: $showSnakeGame) {
+                        SnakeGameView(userId: userId)
+                    }
                 }
                 .padding()
                 
