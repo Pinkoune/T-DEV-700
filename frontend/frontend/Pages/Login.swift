@@ -91,6 +91,9 @@ struct Login: View {
                 Spacer()
             }
         }
+        .onAppear {
+            checkSession()
+        }
         .sheet(isPresented: $showForgotPassword) {
             ForgotPassword()
         }
@@ -145,6 +148,33 @@ struct Login: View {
                 await MainActor.run {
                     isLoading = false
                     errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    func checkSession() {
+        if AuthService.isLoggedIn() {
+            isLoading = true
+            Task {
+                do {
+                    let response = try await AuthService.refreshToken()
+                    await MainActor.run {
+                        isLoading = false
+                        print("Session restaurée pour \(response.user.fullName)")
+                        
+                        if response.user.role == "manager" {
+                            showManagerPage = true
+                        } else {
+                            showEmployeePage = true
+                        }
+                    }
+                } catch {
+                    await MainActor.run {
+                        isLoading = false
+                        print("Session expirée ou invalide")
+                        AuthService.clearLocalData()
+                    }
                 }
             }
         }
