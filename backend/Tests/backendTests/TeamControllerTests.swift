@@ -225,4 +225,26 @@ final class TeamControllerTests: XCTestCase {
             }
         }
     }
+    func testSecondaryManagerSeeTeam() async throws {
+        try await withTestApp { app in
+            let managerA = try await createManagerWithToken(app: app, prefix: "mgrA")
+            let teamID = try await createTeam(app: app, manager: managerA, name: "Joint Team")
+            
+            let managerB = try await createManagerWithToken(app: app, prefix: "mgrB")
+            
+            try await app.test(.POST, "teams/\(teamID)/members/\(managerB.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: managerA.token)
+            }) { res async in
+                XCTAssertEqual(res.status, .created)
+            }
+            
+            try await app.test(.GET, "teams/by-manager/\(managerB.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: managerB.token)
+            }) { res async throws in
+                XCTAssertEqual(res.status, .ok)
+                let teams = try res.content.decode([TeamResponse].self)
+                XCTAssertTrue(teams.contains(where: { $0.id == teamID }), "Manager B should see the team where they are a member")
+            }
+        }
+    }
 }
