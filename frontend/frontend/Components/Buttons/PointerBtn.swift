@@ -87,7 +87,7 @@ struct PointerBtn: View {
 
         if hasActiveEntry {
         } else {
-            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime_\(userId)") as? Date {
                 if calendar.isDateInToday(lastClockOut) {
                     let lastOutHour = calendar.component(.hour, from: lastClockOut)
                     
@@ -120,7 +120,7 @@ struct PointerBtn: View {
 
         if hasActiveEntry {
         } else {
-            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime") as? Date {
+            if let lastClockOut = UserDefaults.standard.object(forKey: "lastClockOutTime_\(userId)") as? Date {
                 if calendar.isDateInToday(lastClockOut) {
                     let lastOutHour = calendar.component(.hour, from: lastClockOut)
                     
@@ -159,7 +159,7 @@ struct PointerBtn: View {
     }
     
     private func checkCooldown() {
-        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime") as? Date {
+        if let lastClock = UserDefaults.standard.object(forKey: "lastClockTime_\(userId)") as? Date {
             let timePassed = Date().timeIntervalSince(lastClock)
             if timePassed < 10 {
                 isTemporarilyBlocked = true
@@ -187,9 +187,10 @@ struct PointerBtn: View {
                     showSuccess = true
                     print("Pointage réussi: \(response.status)")
 
-                    UserDefaults.standard.set(Date(), forKey: "lastClockTime")
+                    UserDefaults.standard.set(Date(), forKey: "lastClockTime_\(userId)")
+                    
                     if !hasActiveEntry {
-                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime")
+                        UserDefaults.standard.set(Date(), forKey: "lastClockOutTime_\(userId)")
                     }
 
                     isTemporarilyBlocked = true
