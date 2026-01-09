@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct EmployeeView: View {
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: Int = 1
     
     var body: some View {
         NavigationStack {
@@ -9,19 +9,21 @@ struct EmployeeView: View {
                 Color(.mainGreen)
                     .ignoresSafeArea()
                 
-                Group {
-                    if selectedTab == 0 {
-                        EmployeeHomePage()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if selectedTab == 1 {
-                        EmployeeDashboard()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        EmployeeAccount()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+                TabView(selection: $selectedTab) {
+                    EmployeeDashboard()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .tag(0)
+
+                    EmployeeHomePage()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .tag(1)
+                    
+                    EmployeeAccount()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .tag(2)
                 }
-                .transition(.opacity)
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .animation(.easeInOut(duration: 0.15), value: selectedTab)
                 
                 VStack {
                     Spacer()
@@ -49,32 +51,11 @@ struct SliderEmployeeNavbar: View {
     }
     
     private var orderedButtons: [(icon: IconType, index: Int)] {
-        switch selectedTab {
-        case 0:
-            return [
-                (.customImage(.store), 1),  // gauche
-                (.customImage(.fries), 0), // centre
-                (.customImage(.burger), 2) // droite
-            ]
-        case 1:
-            return [
-                (.customImage(.store), 1),
-                (.customImage(.fries), 0),
-                (.customImage(.burger), 2)
-            ]
-        case 2:
-            return [
-                (.customImage(.store), 1),
-                (.customImage(.fries), 0),
-                (.customImage(.burger), 2)
-            ]
-        default:
-            return [
-                (.customImage(.store), 1),
-                (.customImage(.fries), 0),
-                (.customImage(.burger), 2)
-            ]
-        }
+        return [
+            (.customImage(.store), 0),
+            (.customImage(.fries), 1), 
+            (.customImage(.burger), 2)
+        ]
     }
     
     var body: some View {
