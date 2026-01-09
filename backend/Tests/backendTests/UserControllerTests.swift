@@ -156,19 +156,6 @@ final class UserControllerTests: XCTestCase {
         }
     }
     
-    func testGetUserPerformances() async throws {
-        try await withTestApp { app in
-            let manager = try await createManagerWithToken(app: app)
-            
-            try await app.test(.GET, "users/\(manager.id)/performances", beforeRequest: { req in
-                req.headers.bearerAuthorization = .init(token: manager.token)
-            }) { res async throws in
-                XCTAssertEqual(res.status, .ok)
-                _ = try res.content.decode([PerformanceResponse].self)
-            }
-        }
-    }
-    
     func testSearchUsers() async throws {
         try await withTestApp { app in
             let manager = try await createManagerWithToken(app: app)

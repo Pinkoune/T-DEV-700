@@ -429,7 +429,10 @@ struct TeamController: RouteCollection {
         }
         
         let teams = try await Team.query(on: req.db)
-            .filter(\.$managerId == managerID)
+            .group(.or) { group in
+                group.filter(\.$managerId == managerID) // Créateur
+                group.filter(\.$members, .custom("@>"), [managerID]) // Membre (PostgreSQL array contains)
+            }
             .filter(\.$isActive == true)
             .all()
         
