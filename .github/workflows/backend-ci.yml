@@ -7,7 +7,7 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
 env:
-  SWIFT_VERSION: '6.1'
+  SWIFT_VERSION: '6.2'
 
 
 jobs:
