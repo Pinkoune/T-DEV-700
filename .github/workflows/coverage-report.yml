@@ -2,15 +2,116 @@ name: Coverage Report
 
 on:
   workflow_run:
-    workflows: ["Backend CI", "Frontend CI", "Docker CI"]
+    workflows: ["Backend CI", "Frontend CI"]
     types:
       - completed
+  pull_request:
+    branches: [main, develop]
 
 jobs:
-  report:
-    name: Generate Coverage Report
+  backend-coverage:
+    name: Backend Coverage
     runs-on: self-hosted
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+      
+      - name: Run tests with coverage
+        working-directory: ./backend
+        run: |
+          swift test --enable-code-coverage
+      
+      - name: Generate coverage report
+        working-directory: ./backend
+        run: |
+          # Trouver le fichier profdata
+          PROFDATA=$(find .build -name "*.profdata" -type f | head -1)
+          
+          # Trouver l'exécutable de test
+          TEST_BINARY=$(find .build -name "*.xctest" -o -name "*PackageTests" -type f | head -1)
+          
+          if [ -n "$PROFDATA" ] && [ -n "$TEST_BINARY" ]; then
+            # Générer le rapport llvm-cov
+            xcrun llvm-cov report "$TEST_BINARY" -instr-profile="$PROFDATA" > coverage-report.txt
+            
+            # Extraire le pourcentage total
+            COVERAGE=$(xcrun llvm-cov report "$TEST_BINARY" -instr-profile="$PROFDATA" | grep "TOTAL" | awk '{print $4}')
+            echo "BACKEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+            
+            # Générer un rapport détaillé
+            xcrun llvm-cov show "$TEST_BINARY" -instr-profile="$PROFDATA" -format=html -output-dir=coverage-html
+            
+            echo "Backend Coverage: $COVERAGE"
+          else
+            echo "BACKEND_COVERAGE=N/A" >> $GITHUB_ENV
+            echo "Could not find profdata or test binary"
+          fi
+      
+      - name: Upload backend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            backend/coverage-report.txt
+            backend/coverage-html/
+        continue-on-error: true
+    
+    outputs:
+      coverage: ${{ env.BACKEND_COVERAGE }}
+
+  frontend-coverage:
+    name: Frontend Coverage
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run tests with coverage
+        working-directory: ./frontend
+        run: |
+          xcodebuild test \
+            -scheme TimeManager \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult \
+            2>/dev/null || true
+      
+      - name: Extract coverage percentage
+        working-directory: ./frontend
+        run: |
+          if [ -d "TestResults.xcresult" ]; then
+            # Extraire le coverage avec xcrun
+            COVERAGE=$(xcrun xccov view --report TestResults.xcresult --json | \
+              python3 -c "import sys, json; data=json.load(sys.stdin); print(f\"{data.get('lineCoverage', 0) * 100:.1f}%\")")
+            echo "FRONTEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+            echo "Frontend Coverage: $COVERAGE"
+          else
+            echo "FRONTEND_COVERAGE=N/A" >> $GITHUB_ENV
+            echo "No test results found"
+          fi
+      
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/TestResults.xcresult
+        continue-on-error: true
+    
+    outputs:
+      coverage: ${{ env.FRONTEND_COVERAGE }}
+
+  generate-report:
+    name: Generate Combined Report
+    runs-on: self-hosted
+    needs: [backend-coverage, frontend-coverage]
+    if: always()
     
     steps:
       - name: Checkout code
@@ -19,36 +120,88 @@ jobs:
       - name: Download backend coverage
         uses: actions/download-artifact@v4
         with:
-          name: backend-test-results
+          name: backend-coverage
           path: ./coverage/backend
         continue-on-error: true
       
       - name: Download frontend coverage
         uses: actions/download-artifact@v4
         with:
-          name: ios-test-results
+          name: frontend-coverage
           path: ./coverage/frontend
         continue-on-error: true
       
       - name: Generate combined report
+        env:
+          BACKEND_COV: ${{ needs.backend-coverage.outputs.coverage }}
+          FRONTEND_COV: ${{ needs.frontend-coverage.outputs.coverage }}
         run: |
-          echo "Generating combined coverage report..."
           mkdir -p coverage-output
           
-          echo "# Test Coverage Report" > coverage-output/coverage-report.md
-          echo "" >> coverage-output/coverage-report.md
-          echo "Generated at: $(date)" >> coverage-output/coverage-report.md
-          echo "" >> coverage-output/coverage-report.md
-          echo "## Backend Coverage" >> coverage-output/coverage-report.md
-          echo "See Codecov for detailed backend coverage" >> coverage-output/coverage-report.md
-          echo "" >> coverage-output/coverage-report.md
-          echo "## Frontend Coverage" >> coverage-output/coverage-report.md
-          echo "See Codecov for detailed frontend coverage" >> coverage-output/coverage-report.md
-          echo "" >> coverage-output/coverage-report.md
-          echo "## Summary" >> coverage-output/coverage-report.md
-          echo "- Backend tests: Completed" >> coverage-output/coverage-report.md
-          echo "- Frontend tests: Completed" >> coverage-output/coverage-report.md
-          echo "- Coverage data uploaded to Codecov" >> coverage-output/coverage-report.md
+          # Déterminer les badges de couleur
+          get_color() {
+            local cov=$1
+            if [[ "$cov" == "N/A" ]]; then
+              echo "gray"
+            elif (( $(echo "$cov" | tr -d '%' | cut -d. -f1) >= 80 )); then
+              echo "brightgreen"
+            elif (( $(echo "$cov" | tr -d '%' | cut -d. -f1) >= 60 )); then
+              echo "yellow"
+            elif (( $(echo "$cov" | tr -d '%' | cut -d. -f1) >= 40 )); then
+              echo "orange"
+            else
+              echo "red"
+            fi
+          }
+          
+          BACKEND_COLOR=$(get_color "$BACKEND_COV")
+          FRONTEND_COLOR=$(get_color "$FRONTEND_COV")
+          
+          cat > coverage-output/coverage-report.md << EOF
+          # 📊 Test Coverage Report
+          
+          **Generated at:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+          ---
+          
+          ## Coverage Summary
+          
+          | Component | Coverage | Status |
+          |-----------|----------|--------|
+          | 🔧 **Backend (Vapor)** | **${BACKEND_COV:-N/A}** | ![Backend](https://img.shields.io/badge/coverage-${BACKEND_COV:-N/A}-${BACKEND_COLOR}) |
+          | 📱 **Frontend (Swift)** | **${FRONTEND_COV:-N/A}** | ![Frontend](https://img.shields.io/badge/coverage-${FRONTEND_COV:-N/A}-${FRONTEND_COLOR}) |
+          
+          ---
+          
+          ## Details
+          
+          ### Backend Coverage
+          - **Framework:** Vapor (Swift)
+          - **Test Runner:** Swift Package Manager
+          - **Coverage:** ${BACKEND_COV:-N/A}
+          
+          ### Frontend Coverage
+          - **Framework:** SwiftUI
+          - **Test Runner:** XCTest
+          - **Coverage:** ${FRONTEND_COV:-N/A}
+          
+          ---
+          
+          ## Coverage Thresholds
+          
+          | Level | Range |
+          |-------|-------|
+          | 🟢 Excellent | ≥ 80% |
+          | 🟡 Good | 60% - 79% |
+          | 🟠 Needs Improvement | 40% - 59% |
+          | 🔴 Critical | < 40% |
+          
+          EOF
+          
+          echo "Coverage report generated!"
+          cat coverage-output/coverage-report.md
       
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -56,16 +209,45 @@ jobs:
           name: coverage-report
           path: coverage-output/coverage-report.md
       
-      - name: Comment PR with coverage
+      - name: Post coverage comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const report = fs.readFileSync('coverage-output/coverage-report.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: report
+              issue_number: context.issue.number,
             });
+            
+            const botComment = comments.find(comment => 
+              comment.body.includes('📊 Test Coverage Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+      
+      - name: Output summary
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.backend-coverage.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.frontend-coverage.outputs.coverage }} |" >> $GITHUB_STEP_SUMMARY
