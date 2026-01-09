@@ -19,144 +19,141 @@ struct ManagerHomePage: View {
     }
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(.mainYellow)
-                    .ignoresSafeArea()
+        ZStack {
+            Color(.mainYellow)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                HeaderView(userType: .manager, title: "Les équipes")
                 
-                VStack(spacing: 0) {
-                    HeaderView(userType: .manager, title: "Les équipes")
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
                     
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        
-                        TextField("Rechercher une équipe...", text: $searchText)
-                            .textFieldStyle(PlainTextFieldStyle())
-                        
-                        if !searchText.isEmpty {
-                            Button(action: { searchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.gray)
-                            }
+                    TextField("Rechercher une équipe...", text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                    
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
                         }
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                
+                HStack {
+                    Text("Gérer les équipes (\(filteredTeams.count))")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
                     
-                    HStack {
-                        Text("Gérer les équipes (\(filteredTeams.count))")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white)
+                    Spacer()
+                    
+                    Button(action: { showCreateTeam = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Créer")
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.mainGreen)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.white)
+                        .cornerRadius(20)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 5)
+                
+                if isLoading {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.2)
+                    Spacer()
+                } else if teams.isEmpty {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white.opacity(0.5))
                         
-                        Spacer()
+                        Text("Aucune équipe")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        Text("Créez votre première équipe pour commencer")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
                         
                         Button(action: { showCreateTeam = true }) {
-                            HStack(spacing: 4) {
+                            HStack {
                                 Image(systemName: "plus.circle.fill")
-                                Text("Créer")
+                                Text("Créer une équipe")
                             }
-                            .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.mainGreen)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
                             .background(Color.white)
-                            .cornerRadius(20)
+                            .cornerRadius(25)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 5)
-                    
-                    if isLoading {
-                        Spacer()
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.2)
-                        Spacer()
-                    } else if teams.isEmpty {
-                        Spacer()
-                        VStack(spacing: 16) {
-                            Image(systemName: "person.3.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.white.opacity(0.5))
-                            
-                            Text("Aucune équipe")
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.7))
-                            
-                            Text("Créez votre première équipe pour commencer")
-                                .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.5))
-                                .multilineTextAlignment(.center)
-                            
-                            Button(action: { showCreateTeam = true }) {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("Créer une équipe")
-                                }
-                                .fontWeight(.semibold)
-                                .foregroundColor(.mainGreen)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(Color.white)
-                                .cornerRadius(25)
-                            }
-                        }
-                        .padding(.horizontal, 40)
-                        Spacer()
-                    } else if filteredTeams.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 40))
-                                .foregroundColor(.white.opacity(0.5))
-                            
-                            Text("Aucun résultat pour \"\(searchText)\"")
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                        Spacer()
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(filteredTeams) { team in
-                                    NavigationLink(destination: TeamDashboard(team: team)) {
-                                        TeamCardEnhanced(team: team)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                            .padding(.vertical)
-                        }
-                        .padding(.bottom, 100)
+                    .padding(.horizontal, 40)
+                    Spacer()
+                } else if filteredTeams.isEmpty {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white.opacity(0.5))
+                        
+                        Text("Aucun résultat pour \"\(searchText)\"")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.7))
                     }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredTeams) { team in
+                                NavigationLink(destination: TeamDashboard(team: team)) {
+                                    TeamCardEnhanced(team: team)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.vertical)
+                    }
+                    .padding(.bottom, 100)
                 }
             }
-            .navigationBarHidden(true)
-            .onAppear {
+        }
+        .onAppear {
+            loadTeams()
+        }
+        .refreshable {
+            await refreshTeams()
+        }
+        .sheet(isPresented: $showCreateTeam) {
+            CreateTeamView { newTeam in
+                teams.insert(Team(from: newTeam), at: 0)
+            }
+        }
+        .alert("Erreur", isPresented: $showError) {
+            Button("Réessayer") {
                 loadTeams()
             }
-            .refreshable {
-                await refreshTeams()
-            }
-            .sheet(isPresented: $showCreateTeam) {
-                CreateTeamView { newTeam in
-                    teams.insert(Team(from: newTeam), at: 0)
-                }
-            }
-            .alert("Erreur", isPresented: $showError) {
-                Button("Réessayer") {
-                    loadTeams()
-                }
-                Button("Annuler", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
-            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
         }
     }
     

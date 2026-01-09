@@ -29,7 +29,7 @@ struct ManagerView: View {
             }
             .allowsHitTesting(true)
         }
-        .ignoresSafeArea(edges: .bottom)
+        .ignoresSafeArea()
     }
 }
 

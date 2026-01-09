@@ -10,7 +10,9 @@ import AVFoundation
 
 @main
 struct frontendApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var didStartAudio = false
+
     var body: some Scene {
         WindowGroup {
             Login()
@@ -21,5 +23,11 @@ struct frontendApp: App {
                     }
                 }
         }
+    }
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return .portrait
     }
 }

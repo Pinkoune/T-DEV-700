@@ -83,7 +83,7 @@ struct PointerBtn: View {
         let date = Date()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: date)
-        let minute = calendar.component(.minute, from: date)
+        _ = calendar.component(.minute, from: date)
 
         if hasActiveEntry {
         } else {
