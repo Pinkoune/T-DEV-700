@@ -14,7 +14,7 @@ services:
       - project-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -122,9 +122,8 @@ services:
       - "traefik.http.routers.mobile-artifacts.entrypoints=web"
       - "traefik.http.services.mobile-artifacts.loadbalancer.server.port=8000"
 
-
   traefik:
-    image: traefik:v2.11
+    image: traefik:v3
     container_name: project-traefik
     command:
       - "--api.insecure=true"
